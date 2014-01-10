@@ -5,6 +5,19 @@ alias ....="cd ../../.."
 alias .....="cd ../../../.."
 alias ~="cd ~" # `cd` is probably faster to type though
 alias -- -="cd -"
+alias desk="cd ~/Desktop"
+
+#symbolicate crash
+alias symcrash="/Developer/Platforms/iPhoneOS.platform/Developer/Library/PrivateFrameworks/DTDeviceKit.framework/Versions/A/Resources/symbolicatecrash"
+
+# view all deleted lines ignoring whitespace
+alias gitshowdel="git diff -w | egrep \"^\-.*\" | egrep -v \"^\-\-\-.*\""
+alias gitshowadd="git diff -w | egrep \"^\+.*\" | egrep -v \"^\+\+\+.*\""
+alias gitshowdiff="git diff -w | egrep \"^(\-|\+).*\" | egrep -v \"^(\-\-\-|\+\+\+).*\""
+
+#commonly used git commands
+alias gpom="git push origin master"
+alias gcam="git commit -a -m"
 
 # Shortcuts
 alias d="cd ~/Documents/Dropbox"
@@ -65,8 +78,10 @@ alias flush="dscacheutil -flushcache && killall -HUP mDNSResponder"
 alias lscleanup="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -kill -r -domain local -domain system -domain user && killall Finder"
 
 # View HTTP traffic
-alias sniff="sudo ngrep -d 'en1' -t '^(GET|POST) ' 'tcp and port 80'"
-alias httpdump="sudo tcpdump -i en1 -n -s 0 -w - | grep -a -o -E \"Host\: .*|GET \/.*\""
+alias sniffeth="sudo ngrep -d 'en0' -t '^(GET|POST) ' 'tcp and port 80'"
+alias httpdumpeth="sudo tcpdump -i en0 -n -s 0 -w - | grep -a -o -E \"Host\: .*|GET \/.*\""
+alias snifflan="sudo ngrep -d 'en1' -t '^(GET|POST) ' 'tcp and port 80'"
+alias httpdumplan="sudo tcpdump -i en1 -n -s 0 -w - | grep -a -o -E \"Host\: .*|GET \/.*\""
 
 # Canonical hex dump; some systems have this symlinked
 command -v hd > /dev/null || alias hd="hexdump -C"
@@ -88,6 +103,13 @@ alias c="tr -d '\n' | pbcopy"
 # Recursively delete `.DS_Store` files
 alias cleanup="find . -type f -name '*.DS_Store' -ls -delete"
 
+# Shortcuts
+alias g="git"
+alias v="vim"
+alias m="mate ."
+
+# File size
+alias fs="stat -c \"%s bytes\""
 # ROT13-encode text. Works for decoding, too! ;)
 alias rot13='tr a-zA-Z n-za-mN-ZA-M'
 
@@ -152,3 +174,6 @@ alias reload="exec $SHELL -l"
 
 # Faster npm for europeans
 command -v npm > /dev/null && alias npme="npm --registry http://registry.npmjs.eu"
+#Disk usage of a git repo
+alias reposize="du -hs $(git rev-parse --show-toplevel)"
+alias rmiosapps="rm -rf ~/Library/Application\ Support/iPhone\ Simulator/6.1/Applications/*"

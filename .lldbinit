@@ -1,0 +1,22 @@
+# for sniffing objc exceptions (Get it from https://gist.github.com/nodemaker/7544057)
+# if you are feeling really lazy run (" mkdir ~/Library/lldb ; curl https://gist.github.com/nodemaker/7544057/raw -o  ~/Library/lldb/sniff_objc_exception_throw.py ; chmod a+x ~/Library/lldb/sniff_objc_exception_throw.py")
+command script import ~/Library/lldb/sniff_objc_exception_throw.py
+
+# for getting return values of functions (Get it from https://gist.github.com/schwa/7812916)
+# if you are feeling really lazy run (" mkdir ~/Library/lldb ; curl https://gist.github.com/schwa/7812916/raw -o  ~/Library/lldb/thread_return.py ; chmod a+x ~/Library/lldb/thread_return.py" )
+command script import ~/Library/lldb/thread_return.py
+
+# from https://gist.github.com/mike3k/4513568
+# rd: print a recursive description of views
+command regex rd 's/^[[:space:]]*$/po [[[UIApplication sharedApplication] keyWindow] recursiveDescription]/' 's/^(.+)$/po [%1 recursiveDescription]/'
+
+# prect: print the properties of a rect
+command regex prect 's/(.+)/print (CGRect)%1/'
+
+# from http://blog.ittybittyapps.com/blog/2013/11/07/integrating-reveal-without-modifying-your-xcode-project/
+# for loading reavel
+
+command alias reveal_load_sim expr (void*)dlopen("/Applications/Reveal.app/Contents/SharedSupport/iOS-Libraries/libReveal.dylib", 0x2);
+command alias reveal_load_dev expr (void*)dlopen([(NSString*)[(NSBundle*)[NSBundle mainBundle] pathForResource:@"libReveal" ofType:@"dylib"] cStringUsingEncoding:0x4], 0x2);
+command alias reveal_start expr (void)[(NSNotificationCenter*)[NSNotificationCenter defaultCenter] postNotificationName:@"IBARevealRequestStart" object:nil];
+command alias reveal_stop expr (void)[(NSNotificationCenter*)[NSNotificationCenter defaultCenter] postNotificationName:@"IBARevealRequestStop" object:nil];

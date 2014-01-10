@@ -312,3 +312,63 @@ function np() {
 function tre() {
 	tree -aC -I '.git|node_modules|bower_components' --dirsfirst "$@" | less -FRNX
 }
+
+#show the git root
+gitroot() {
+  git rev-parse --show-toplevel
+}
+
+#go to the git root
+gitgoroot() {
+  cd $(git rev-parse --show-toplevel)
+}
+
+#symbolicate crash
+function desym
+{
+    /Developer/Platforms/iPhoneOS.platform/Developer/Library/PrivateFrameworks/DTDeviceKit.framework/Versions/A/Resources/symbolicatecrash -A -v $1 | more
+}
+
+#quit apps
+quit () {
+        for app in $*; do
+                osascript -e 'quit app "'$app'"'
+        done
+}
+
+#show man in preview
+pman() { man -t "${1}" | open -f -a Preview; }
+
+#show machine information
+function mach()
+{
+    echo -e "\nMachine information:" ; uname -a
+    echo -e "\nUsers logged on:" ; w -h
+    echo -e "\nCurrent date :" ; date
+    echo -e "\nMachine status :" ; uptime
+    echo -e "\nMemory status :" ; free
+    echo -e "\nFilesystem status :"; df -h
+}
+
+#clear list files and go to bottom
+function ll ()
+{
+    clear;
+    tput cup 0 0;
+    ls -Gla;
+    tput cup 40 0;
+}
+
+#get all $PATH commands from file and them to the global $PATH
+exportpaths()
+{
+    cat $1 | grep -i "export path=" > temp.exports
+    if [ -s temp.exports ]; then source temp.exports; fi;
+    rm temp.exports
+}
+
+#get meaning of a word from wikipedia
+mwiki() 
+{ 
+	dig +short txt "$*".wp.dg.cx; 
+}

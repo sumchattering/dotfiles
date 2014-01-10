@@ -37,3 +37,11 @@ complete -o "nospace" -W "Contacts Calendar Dock Finder Mail Safari iTunes Syste
 
 # If possible, add tab completion for many more commands
 [ -f /etc/bash_completion ] && source /etc/bash_completion
+
+# Load the git completion script
+source ~/.git-completion.sh
+
+# Append the dynamic paths
+export PATH=$(cat $HOME/.dynamicpaths)$PATH
+
+[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*

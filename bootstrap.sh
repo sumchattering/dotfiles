@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 cd "$(dirname "${BASH_SOURCE}")"
 git pull origin master
+
+echo "Bootstrapping ${PWD##*/}..."
+
 function doIt() {
 	rsync --exclude ".git/" --exclude ".DS_Store" --exclude "bootstrap.sh" \
 		--exclude "README.md" --exclude "LICENSE-MIT.txt" -av --no-perms . ~
@@ -16,3 +19,6 @@ else
 	fi
 fi
 unset doIt
+
+#Add current directory to path
+export PATH=$PWD:$PATH
