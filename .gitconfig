@@ -36,6 +36,15 @@
 	# Advanced Stashing
 	sshow = "!f() { git stash show stash^{/$*} -p; }; f"
 	sapply = "!f() { git stash apply stash^{/$*}; }; f"
+	ci = commit
+	co = checkout
+	st = status
+	ls = log --pretty=format:"%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate
+	dt = "!f() { git difftool $1^ $1; }; f"
+	dtfiles = "!f() { git diff --name-status $1^ $1; }; f"
+	pullall = pull; submodule foreach git pull;
+	gui = "gui"¬
+	gl="log --color --graph --pretty='format:%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"¬ 
 
 [apply]
 	# Detect whitespace errors when applying a patch
@@ -73,15 +82,9 @@
 	added = yellow
 	changed = green
 	untracked = cyan
-[merge]
-	# Include summaries of merged commits in newly created merge commit messages
-	log = true
-	tool = opendiff
-
-[diff]
-	tool = opendiff
 
 # URL shorthands
+
 [url "git@github.com:"]
 	insteadOf = "gh:"
 	pushInsteadOf = "github:"
@@ -97,16 +100,28 @@
 
 [push]
 	default = matching
-  	
-[alias]
-  	gui = "gui"
-  	gl="log --color --graph --pretty='format:%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
 
 [difftool "sourcetree"]
 	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
 	path = 
-
 [mergetool "sourcetree"]
 	cmd = /Applications/SourceTree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
 	trustExitCode = true
-
+[difftool "Kaleidoscope"]
+[diff]
+[difftool]
+[mergetool "Kaleidoscope"]
+	trustexitcode = true
+[mergetool]
+	prompt = false
+[merge]
+	log = true
+	tool = Kaleidoscope
+[mergetool "Kaleidoscope"]
+	cmd = ksdiff --merge --output \"$MERGED\" --base \"$BASE\" -- \"$LOCAL\" --snapshot \"$REMOTE\" --snapshot
+[difftool "Kaleidoscope"]
+	cmd = ksdiff --partial-changeset --relative-path \"$MERGED\" -- \"$LOCAL\" \"$REMOTE\"
+[difftool]
+	prompt = false
+[diff]
+	tool = Kaleidoscope
