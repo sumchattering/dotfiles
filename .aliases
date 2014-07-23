@@ -177,3 +177,13 @@ command -v npm > /dev/null && alias npme="npm --registry http://registry.npmjs.e
 #Disk usage of a git repo
 alias reposize="du -hs $(git rev-parse --show-toplevel)"
 alias rmiosapps="rm -rf ~/Library/Application\ Support/iPhone\ Simulator/6.1/Applications/*"
+
+#aliases from alias.sh
+alias gl="git log --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
+alias lr='ls -R | grep ":$" | sed -e '\''s/:$//'\'' -e '\''s/[^-][^\/]*\//--/g'\'' -e '\''s/^/   /'\'' -e '\''s/-/|/'\'''
+alias l.='ls -d .* --color=auto'
+alias freq='cut -f1 -d" " ~/.bash_history | sort | uniq -c | sort -nr | head -n 30'
+alias active='grep -v -e "^$" -e"^ *#"'
+alias gvl='git log --graph --full-history --all --color --pretty=format:"%x1b[31m%h%x09%x1b[32m%d%x1b[0m%x20%s"'
+alias tm='ps -ef | grep'
+
