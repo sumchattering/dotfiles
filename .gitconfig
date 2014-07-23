@@ -116,7 +116,7 @@
 	prompt = false
 [merge]
 	log = true
-	tool = Kaleidoscope
+	tool = opendiff
 [mergetool "Kaleidoscope"]
 	cmd = ksdiff --merge --output \"$MERGED\" --base \"$BASE\" -- \"$LOCAL\" --snapshot \"$REMOTE\" --snapshot
 [difftool "Kaleidoscope"]
