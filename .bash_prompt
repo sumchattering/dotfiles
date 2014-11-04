@@ -3,16 +3,32 @@ function parse_git_dirty() {
 	[[ $(git status 2> /dev/null | tail -n1) != *"working directory clean"* ]] && echo "*"
 }
 
+function parse_hg_dirty() {
+	hg status 2> /dev/null | awk '$1 == "?" { print "?" } $1 != "?" { print "!" }' | sort | uniq | head -c1
+}
+
 function parse_git_branch {
-  git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e "s/* \(.*\)/[\1$(parse_git_dirty)]/"
+	git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e "s/* \(.*\)/[\1$(parse_git_dirty)]/"
+}
+
+function parse_hg_branch {
+	hg branch 2> /dev/null |  sed -e "s/\(.*\)/[\1$(parse_hg_dirty)]/"
 }
 
 function last_two_dirs {
-        pwd |rev| awk -F / '{print $1,$2}' | rev | sed s_\ _/_
+    pwd |rev| awk -F / '{print $1,$2}' | rev | sed s_\ _/_
+}
+
+function parse_hg_git_branch {
+	if [ -d .git ]; then
+  		echo $(parse_git_branch)
+	else
+  		[[ `hg branch 2> /dev/null` ]] && echo $(parse_hg_branch)
+	fi;
 }
 
 #Customize the prompt
-PS1="\[\033[01;32m\]\u\[\033[00m\]:\[\033[01;34m\]\$(last_two_dirs)\[\033[00m\]\$(parse_git_branch)"
+PS1="\[\033[01;32m\]\u\[\033[00m\]:\[\033[01;34m\]\$(last_two_dirs)\[\033[00m\]\$(parse_hg_git_branch)"
 case `id -u` in
       0) PS1="${PS1}# ";;
       *) PS1="${PS1}$ ";;
