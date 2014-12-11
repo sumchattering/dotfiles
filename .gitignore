@@ -20,6 +20,8 @@ xcuserdata
 .dynamicpaths
 *.orig
 *.*.*
+*~
+xcschememanagement.plist
 
 #Extra configs
 .extra

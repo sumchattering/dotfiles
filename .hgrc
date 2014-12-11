@@ -128,31 +128,31 @@ ks = !/opt/local/bin/hg ksdiff -c $@
 # Each of these can be used with -v to add a bit more info.
 
 # Datelog: short, pretty hg log with dates.
-dlog = log --style=$HOME/lib/dotfiles/mercurial/templates/map-cmdline.dlog
+dlog = log --style=$HOME/mercurial/templates/map-cmdline.dlog
 _ = dlog -l15
 __ = _ -l100000000
-o_ = outgoing -n --style=$HOME/lib/dotfiles/mercurial/templates/map-cmdline.dlog
-i_ = incoming -n --style=$HOME/lib/dotfiles/mercurial/templates/map-cmdline.dlog
+o_ = outgoing -n --style=$HOME/mercurial/templates/map-cmdline.dlog
+i_ = incoming -n --style=$HOME/mercurial/templates/map-cmdline.dlog
 
 # Shortlog: short, pretty hg log.
-slog = log --style=$HOME/lib/dotfiles/mercurial/templates/map-cmdline.slog
+slog = log --style=$HOME/mercurial/templates/map-cmdline.slog
 . = slog -l15
 .. = . -l100000000
-o. = outgoing -n --style=$HOME/lib/dotfiles/mercurial/templates/map-cmdline.slog
-i. = incoming -n --style=$HOME/lib/dotfiles/mercurial/templates/map-cmdline.slog
+o. = outgoing -n --style=$HOME/mercurial/templates/map-cmdline.slog
+i. = incoming -n --style=$HOME/mercurial/templates/map-cmdline.slog
 
 # Short graphlog: short, pretty hg log with a graph.
-sglog = glog --style=$HOME/lib/dotfiles/mercurial/templates/map-cmdline.sglog
+sglog = glog --style=$HOME/mercurial/templates/map-cmdline.sglog
 , = sglog -l7
 ,, = , -l100000000
-o, = outgoing --graph --style=$HOME/lib/dotfiles/mercurial/templates/map-cmdline.sglog
-i, = incoming --graph --style=$HOME/lib/dotfiles/mercurial/templates/map-cmdline.sglog
+o, = outgoing --graph --style=$HOME/mercurial/templates/map-cmdline.sglog
+i, = incoming --graph --style=$HOME/mercurial/templates/map-cmdline.sglog
 
 
 # hg n .     -- show a summary of rev . without diff.
 # hg show .  -- show a summary of rev . with diff.
 # hg sl .    -- show a summary of rev . with diff, piped to less
-nlog = log --style=$HOME/lib/dotfiles/mercurial/templates/map-cmdline.nlog
+nlog = log --style=$HOME/mercurial/templates/map-cmdline.nlog
 n = nlog -vr
 show = nlog --color=always -vpr
 sl = !"$HG" nlog --color=always -vpr $@ | less -R

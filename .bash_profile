@@ -45,3 +45,4 @@ source ~/.git-completion.sh
 export PATH=$(cat $HOME/.dynamicpaths)$PATH
 
 [[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*
+export PYTHONPATH=/usr/local/lib/python2.7/site-packages:/usr/local/lib/python2.7/site-packages:

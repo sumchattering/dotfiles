@@ -187,3 +187,6 @@ alias active='grep -v -e "^$" -e"^ *#"'
 alias gvl='git log --graph --full-history --all --color --pretty=format:"%x1b[31m%h%x09%x1b[32m%d%x1b[0m%x20%s"'
 alias tm='ps -ef | grep'
 
+#Show Xcode Plugins
+alias plugins='find "/Users/sumeruchatterjee/Library/Application Support/Developer/Shared/Xcode" -iname "*.xcplugin" -exec basename {} \;'
+
