@@ -15,14 +15,16 @@ Thumbs.db
 
 #Xcode files
 xcuserdata
-*.xcworkspace
 *.perspective*
 .dynamicpaths
 *.orig
-*.*.*
 *~
 xcschememanagement.plist
+*.xccheckout
+*.xcuserstate
+*.xcbkptlist
 
 #Extra configs
 .extra
 .hgrc_local
+

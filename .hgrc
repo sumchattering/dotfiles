@@ -2,6 +2,7 @@
 editor = vim
 commitsubrepos = False
 ignore = ~/.hgignore
+merge = diffmerge
 
 [extensions]
 transplant = 
@@ -21,12 +22,21 @@ fetch =
 shelve = 
 prompt   = ~/Dropbox/Shell/misc/hg-prompt/prompt.py
 histedit = 
+onsub = ~/Dropbox/Shell/misc/onsub.py
+hgext.extdiff =
+hgext.bookmarks =
+hggit =
 
 [progress]
 delay = 1.0
 
 [schemes]
 bbs = ssh://hg@bitbucket.org/
+
+[auth]
+layardev.prefix = hg@bitbucket.org/layardev/
+layardev.username = samyzee
+layardev.password = password
 
 [diff]
 git = True
@@ -35,14 +45,12 @@ unified = 5
 [extdiff]
 cmd.vd = vim
 opts.vd = -c 'set lines=70' -c 'set columns=240' '+next' '+execute "DirDiff" argv(0) argv(1)'
-cmd.ksdiff = /usr/local/bin/ksdiff
-opts.ksdiff = --changeset --wait --filelist
+cmd.interdiff = hg-interdiff
+cmd.opendiff = opendiff-w
 
 [merge-tools]
-splice.executable = vim
-splice.args = -f $base $local $other $output -c 'SpliceInit'
-splice.premerge = keep
-splice.priority = 1
+filemerge.executable = opendiff-w
+filemerge.args = $local $other -ancestor $base -merge $output
 
 keepthat.executable = sh
 keepthat.args = -c 'cp "$local" "$output.original" && cp "$other" "$output"'
@@ -120,8 +128,8 @@ dl = !"$HG" diff -p --color=never $@ | vim -R -c 'set ft=diff' -
 
 # Kaleidoscope
 # Mnemonics: "kaleidoscope diff" and "kaleidoscope show"
-kd = !/opt/local/bin/hg ksdiff $@
-ks = !/opt/local/bin/hg ksdiff -c $@
+kd = !/usr/local/bin/hg ksdiff $@
+ks = !/usr/local/bin/hg ksdiff -c $@
 
 # Log shortcuts --------------------------------------------------------------------
 #
@@ -175,6 +183,9 @@ mkrepo = !$HG init $1 && cd $1 && \
 
 # Empty the current MQ patch.
 qempty = !$HG qrefresh -X `$HG root`
+
+#show ignored files
+showignored=!"$HG" st -A | grep -v '.git/' | grep '^I'
 
 # Commit under any applied MQ patches, and go back to where you were after doing so.
 # `hg ciunder` will use `$EDITOR` to get the commit message

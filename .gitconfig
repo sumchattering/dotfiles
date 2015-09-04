@@ -43,8 +43,8 @@
 	dt = "!f() { git difftool $1^ $1; }; f"
 	dtfiles = "!f() { git diff --name-status $1^ $1; }; f"
 	pullall = pull; submodule foreach git pull;
-	gui = "gui"
 	gl = "log --color --graph --pretty='format:%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
+	gui = !sh -c '/usr/local/git/libexec/git-core/git-gui'
 
 [apply]
 	# Detect whitespace errors when applying a patch

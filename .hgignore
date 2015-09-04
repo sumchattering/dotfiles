@@ -18,7 +18,12 @@ Thumbs.db
 
 #Xcode files
 xcuserdata
-*.xcworkspace
+*.xcuserstate
+*.xccheckout
+*.xcworkspacedata
 *.perspective*
 .dynamicpaths
 *.orig
+
+#Git Data
+.git*

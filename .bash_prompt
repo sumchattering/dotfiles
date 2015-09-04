@@ -20,11 +20,21 @@ function last_two_dirs {
 }
 
 function parse_hg_git_branch {
-	if [ -d .git ]; then
-  		echo $(parse_git_branch)
-	else
-  		[[ `hg branch 2> /dev/null` ]] && echo $(parse_hg_branch)
-	fi;
+
+([ -d .git ] || git rev-parse --git-dir > /dev/null 2>&1) && is_repo_git=true || is_repo_git=false
+([ -d .hg ]  || hg branch > /dev/null 2>&1) && is_repo_hg=true || is_repo_hg=false
+
+	if $is_repo_git && $is_repo_hg
+  then
+    echo $(parse_hg_branch)/$(parse_git_branch)
+  elif $is_repo_hg
+  then
+    echo $(parse_hg_branch) 
+  elif $is_repo_git
+    then
+  	echo $(parse_git_branch)
+  fi
+  
 }
 
 #Customize the prompt

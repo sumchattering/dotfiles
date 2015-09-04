@@ -372,3 +372,10 @@ mwiki()
 { 
 	dig +short txt "$*".wp.dg.cx; 
 }
+
+# merge dotfiles from repo and home directory
+mergedotfile() {
+  set -x
+  opendiff ~/"$1" $dotfiles/"$1" -merge $dotfiles/"$1"¬
+  set +x
+}
