@@ -19,14 +19,25 @@ alias gitshowdiff="git diff -w | egrep \"^(\-|\+).*\" | egrep -v \"^(\-\-\-|\+\+
 alias gpom="git push origin master"
 alias gcam="git commit -a -m"
 
+# Easier navigation: .., ..., ~ and -
+alias ..="cd .."
+alias ...="cd ../.."
+alias ....="cd ../../.."
+alias .....="cd ../../../.."
+alias ~="cd ~" # `cd` is probably faster to type though
+alias -- -="cd -"
+alias desk="cd ~/Desktop"
+
 # Shortcuts
-alias d="cd ~/Documents/Dropbox"
-alias dl="cd ~/Downloads"
-alias dt="cd ~/Desktop"
-alias p="cd ~/projects"
+alias d="cd ~/Dropbox"
 alias g="git"
 alias h="history"
 alias j="jobs"
+alias v="vim"
+alias m="mate ."
+alias s="subl ."
+alias o="open"
+alias oo="open ."
 
 # Detect which `ls` flavor is in use
 if ls --color > /dev/null 2>&1; then # GNU `ls`
@@ -53,6 +64,9 @@ alias sudo='sudo '
 
 # Gzip-enabled `curl`
 alias gurl='curl --compressed'
+
+# Get OS X Software Updates, update Homebrew itself, and upgrade installed Homebrew packages
+alias update='sudo softwareupdate -i -a; brew update; brew upgrade'
 
 # Get week number
 alias week='date +%V'
@@ -110,6 +124,7 @@ alias m="mate ."
 
 # File size
 alias fs="stat -c \"%s bytes\""
+
 # ROT13-encode text. Works for decoding, too! ;)
 alias rot13='tr a-zA-Z n-za-mN-ZA-M'
 
@@ -157,10 +172,16 @@ done
 # Make Grunt print stack traces by default
 command -v grunt > /dev/null && alias grunt="grunt --stack"
 
+#Disk usage of a git repo
+alias reposize="du -hs $(git rev-parse --show-toplevel)"
+
 # Stuff I never really use but cannot delete either because of http://xkcd.com/530/
 alias stfu="osascript -e 'set volume output muted true'"
 alias pumpitup="osascript -e 'set volume 7'"
 alias hax="growlnotify -a 'Activity Monitor' 'System error' -m 'WTF R U DOIN'"
+
+#Darwin iOS Debugger
+alias gdb-darwin="/Developer/Platforms/iPhoneOS.platform/Developer/usr/libexec/gdb/gdb-arm-apple-darwin"
 
 # Kill all the tabs in Chrome to free up memory
 # [C] explained: http://www.commandlinefu.com/commands/view/402/exclude-grep-from-your-grepped-output-of-ps-alias-included-in-description
