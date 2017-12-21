@@ -23,8 +23,11 @@ xcschememanagement.plist
 *.xccheckout
 *.xcuserstate
 *.xcbkptlist
+*.xcscmblueprint
 
 #Extra configs
 .extra
 .hgrc_local
 
+#build directory
+build

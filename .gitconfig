@@ -93,10 +93,7 @@
 
 
 # view all deleted lines ignoring whitespace
-	showdel = "diff -w | egrep \"^\-.*\" | egrep -v \"^\-\-\-.*\""
-	showadd = "diff -w | egrep \"^\+.*\" | egrep -v \"^\+\+\+.*\""
-	showdiff = "diff -w | egrep \"^(\-|\+).*\" | egrep -v \"^(\-\-\-|\+\+\+).*\""
-
+	reposize = "du -hs $(git rev-parse --show-toplevel)"
 
 [apply]
 
@@ -222,3 +219,7 @@
 	tool = opendiff
 [difftool]
 	prompt = false
+[branch "master"]
+    mergeoptions = --no-ff
+[branch "develop"]
+    mergeoptions = --no-ff
