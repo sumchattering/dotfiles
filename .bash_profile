@@ -55,5 +55,3 @@ source ~/.git-completion.sh
 
 # Append the dynamic paths
 export PATH=$(cat $HOME/.dynamicpaths)$PATH
-
-export PYTHONPATH=/usr/local/lib/python2.7/site-packages:/usr/local/lib/python2.7/site-packages:

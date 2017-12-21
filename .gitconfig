@@ -201,31 +201,19 @@
 
 [push]
 	default = matching
-
 [difftool "sourcetree"]
 	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
 	path = 
 [mergetool "sourcetree"]
 	cmd = /Applications/SourceTree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
 	trustExitCode = true
-[difftool "Kaleidoscope"]
-[diff]
-[difftool]
-[mergetool "Kaleidoscope"]
-	trustexitcode = true
 [mergetool]
 	prompt = false
 [merge]
 	log = true
 	tool = opendiff
-[mergetool "Kaleidoscope"]
-	cmd = ksdiff --merge --output \"$MERGED\" --base \"$BASE\" -- \"$LOCAL\" --snapshot \"$REMOTE\" --snapshot
-[difftool "Kaleidoscope"]
-	cmd = ksdiff --partial-changeset --relative-path \"$MERGED\" -- \"$LOCAL\" \"$REMOTE\"
 [difftool]
 	prompt = false
-[diff]
-	tool = Kaleidoscope
 [user]
 	name = Sumeru Chatterjee
-	email = sumeru.chatterjee@blippar.com
+	email = nodemaker@gmail.com

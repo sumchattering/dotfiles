@@ -7,19 +7,6 @@ alias ....="cd ../../.."
 alias .....="cd ../../../.."
 alias ~="cd ~" # `cd` is probably faster to type though
 alias -- -="cd -"
-alias desk="cd ~/Desktop"
-
-#symbolicate crash
-alias symcrash="/Developer/Platforms/iPhoneOS.platform/Developer/Library/PrivateFrameworks/DTDeviceKit.framework/Versions/A/Resources/symbolicatecrash"
-
-# view all deleted lines ignoring whitespace
-alias gitshowdel="git diff -w | egrep \"^\-.*\" | egrep -v \"^\-\-\-.*\""
-alias gitshowadd="git diff -w | egrep \"^\+.*\" | egrep -v \"^\+\+\+.*\""
-alias gitshowdiff="git diff -w | egrep \"^(\-|\+).*\" | egrep -v \"^(\-\-\-|\+\+\+).*\""
-
-#commonly used git commands
-alias gpom="git push origin master"
-alias gcam="git commit -a -m"
 
 # Shortcuts
 alias d="cd ~/Dropbox"
