@@ -91,9 +91,17 @@
 		fi \
 	}; f"
 
+
+# view all deleted lines ignoring whitespace
+	showdel = "diff -w | egrep \"^\-.*\" | egrep -v \"^\-\-\-.*\""
+	showadd = "diff -w | egrep \"^\+.*\" | egrep -v \"^\+\+\+.*\""
+	showdiff = "diff -w | egrep \"^(\-|\+).*\" | egrep -v \"^(\-\-\-|\+\+\+).*\""
+
+
 [apply]
 
 	# Detect whitespace errors when applying a patch
+	whitespace = fix
 
 [core]
 
@@ -214,6 +222,3 @@
 	tool = opendiff
 [difftool]
 	prompt = false
-[user]
-	name = Sumeru Chatterjee
-	email = nodemaker@gmail.com
