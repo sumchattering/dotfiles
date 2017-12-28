@@ -459,18 +459,18 @@ __git_complete_revlist_file ()
 
 		__gitcomp_nl "$(git --git-dir="$(__gitdir)" ls-tree "$ls" 2>/dev/null \
 				| sed '/^100... blob /{
-				           s,^.*	,,
-				           s,$, ,
-				       }
-				       /^120000 blob /{
-				           s,^.*	,,
-				           s,$, ,
-				       }
-				       /^040000 tree /{
-				           s,^.*	,,
-				           s,$,/,
-				       }
-				       s/^.*	//')" \
+						   s,^.*	,,
+						   s,$, ,
+					   }
+					   /^120000 blob /{
+						   s,^.*	,,
+						   s,$, ,
+					   }
+					   /^040000 tree /{
+						   s,^.*	,,
+						   s,$,/,
+					   }
+					   s/^.*	//')" \
 			"$pfx" "$cur_" ""
 		;;
 	*...*)
@@ -2520,7 +2520,7 @@ __git_main ()
 			"
 			;;
 		*)     __git_compute_porcelain_commands
-		       __gitcomp "$__git_porcelain_commands $(__git_aliases)" ;;
+			   __gitcomp "$__git_porcelain_commands $(__git_aliases)" ;;
 		esac
 		return
 	fi

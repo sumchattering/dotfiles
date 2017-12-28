@@ -57,7 +57,7 @@ function parse_hg_branch {
 }
 
 function last_two_dirs {
-    pwd |rev| awk -F / '{print $1,$2}' | rev | sed s_\ _/_
+	pwd |rev| awk -F / '{print $1,$2}' | rev | sed s_\ _/_
 }
 
 function parse_hg_git_branch {
@@ -67,13 +67,13 @@ function parse_hg_git_branch {
 
 	if $is_repo_git && $is_repo_hg
   then
-    echo $(parse_hg_branch)/$(parse_git_branch)
+	echo $(parse_hg_branch)/$(parse_git_branch)
   elif $is_repo_hg
   then
-    echo $(parse_hg_branch) 
+	echo $(parse_hg_branch) 
   elif $is_repo_git
-    then
-  	echo $(parse_git_branch)
+	then
+	echo $(parse_git_branch)
   fi
   
 }
@@ -81,6 +81,6 @@ function parse_hg_git_branch {
 #Customize the prompt
 PS1="\[\033[01;32m\]\u\[\033[00m\]:\[\033[01;34m\]\$(last_two_dirs)\[\033[00m\]\$(parse_hg_git_branch)"
 case `id -u` in
-      0) PS1="${PS1}# ";;
-      *) PS1="${PS1}$ ";;
+	  0) PS1="${PS1}# ";;
+	  *) PS1="${PS1}$ ";;
 esac
