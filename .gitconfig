@@ -13,7 +13,7 @@
 	di = !"d() { git diff --patch-with-stat HEAD~$1; }; git diff-index --quiet HEAD -- || clear; d"
 
 	# Pull in remote changes for the current repository and all its submodules
-	p = !"git pull; git submodule foreach git pull origin master"
+	p = git pull --recurse-submodules
 
 	# Clone a repository including all submodules
 	c = clone --recursive
@@ -92,8 +92,11 @@
 	}; f"
 
 
-# view all deleted lines ignoring whitespace
+    # view all deleted lines ignoring whitespace
 	reposize = "du -hs $(git rev-parse --show-toplevel)"
+
+	# Show the user email for the current repository.
+	whoami = config user.email
 
 [apply]
 
