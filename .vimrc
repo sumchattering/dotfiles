@@ -46,8 +46,12 @@ set number
 syntax on
 " Highlight current line
 set cursorline
-" Make tabs as wide as two spaces
-set tabstop=2
+" Make tabs as wide as four spaces
+set tabstop=4
+set shiftwidth=4
+" Enable auto indenting
+set autoindent
+set cindent
 " Show “invisible” characters
 set lcs=tab:▸\ ,trail:·,eol:¬,nbsp:_
 set list
@@ -103,11 +107,19 @@ if has("autocmd")
 	autocmd BufNewFile,BufRead *.json setfiletype json syntax=javascript
 	" Treat .md files as Markdown
 	autocmd BufNewFile,BufRead *.md setlocal filetype=markdown
+    " Trim white spaces on c and python
+	autocmd BufWritePre *.c,*.py :%s/\s\+$//e
+	"Fix indent on C and Python
+	autocmd BufWritePre *.c,*.py :normal gg=G
+	"Trim blank lines in the end of file
+	autocmd BufWritePre *.c,*.py $put _ | $;?\(^\s*$\)\@!?+2,$d
 endif
 
+" Commands for splitting windows
 set splitbelow
 set splitright
 nnoremap <C-J> <C-W><C-J>
 nnoremap <C-K> <C-W><C-K>
 nnoremap <C-L> <C-W><C-L>
 nnoremap <C-H> <C-W><C-H>
+

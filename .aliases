@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+#Sublime Shortcut
+alias s="~/bin/subl"
+
+#Gcc with all warnings
+alias gccw="gcc -Wall -Wall -Werror -Wextra -pedantic"
+
 # Easier navigation: .., ..., ...., ....., ~ and -
 alias ..="cd .."
 alias ...="cd ../.."
