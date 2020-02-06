@@ -154,6 +154,7 @@
 
 	# https://help.github.com/articles/signing-commits-using-gpg/
 	gpgsign = false
+	template = ~/.stCommitMsg
 
 [diff]
 
@@ -210,7 +211,7 @@
 	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
 	path = 
 [mergetool "sourcetree"]
-	cmd = /Applications/SourceTree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
+	cmd = /Applications/Sourcetree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
 	trustExitCode = true
 [mergetool]
 	prompt = false
@@ -223,3 +224,6 @@
 	mergeoptions = --no-ff
 [branch "develop"]
 	mergeoptions = --no-ff
+[credential]    
+    helper = !aws codecommit credential-helper $@ 
+    UseHttpPath = true
