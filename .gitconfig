@@ -227,6 +227,3 @@
 	mergeoptions = --no-ff
 [branch "develop"]
 	mergeoptions = --no-ff
-[credential]    
-    helper = !aws codecommit credential-helper $@ 
-    UseHttpPath = true

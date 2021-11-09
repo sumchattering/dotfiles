@@ -6,6 +6,9 @@ alias s="~/bin/subl"
 #Gcc with all warnings
 alias gccw="gcc -Wall -Wall -Werror -Wextra -pedantic"
 
+# Gtree
+alias gtree="git ls-tree -r --name-only HEAD | tree --fromfile"
+
 # Easier navigation: .., ..., ...., ....., ~ and -
 alias ..="cd .."
 alias ...="cd ../.."
@@ -179,4 +182,5 @@ alias tm='ps -ef | grep'
 
 #formatting commands from clipboard
 alias formatcommandclipboard='pbpaste > /tmp/command.file ; formatcommand.py /tmp/command.file'
+alias formatargsclipboard='pbpaste > /tmp/command.file ; formatargs.py /tmp/command.file'
 

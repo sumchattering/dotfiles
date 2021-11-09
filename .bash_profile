@@ -1,6 +1,8 @@
 # Add `~/bin` to the `$PATH`
 export PATH="$HOME/bin:$PATH";
 
+# Add ruby to the path
+export PATH="/usr/local/opt/ruby/bin:$PATH"
 # Load the shell dotfiles, and then some:
 # * ~/.path can be used to extend `$PATH`.
 # * ~/.extra can be used for other settings you don’t want to commit.
@@ -59,8 +61,8 @@ source ~/.git-completion.sh
 export PATH=$(cat $HOME/.dynamicpaths)$PATH
 
 # The next line updates PATH for the Google Cloud SDK.
-if [ -f '/Users/sumchatterjee/gcloud/google-cloud-sdk/path.bash.inc' ]; then source '/Users/sumchatterjee/gcloud/google-cloud-sdk/path.bash.inc'; fi
+if [ -f '$HOME/tools/google-cloud-sdk/path.bash.inc' ]; then . '$HOME/tools/google-cloud-sdk/path.bash.inc'; fi
 
 # The next line enables shell command completion for gcloud.
-if [ -f '/Users/sumchatterjee/gcloud/google-cloud-sdk/completion.bash.inc' ]; then source '/Users/sumchatterjee/gcloud/google-cloud-sdk/completion.bash.inc'; fi
-
+if [ -f '$HOME/tools/google-cloud-sdk/completion.bash.inc' ]; then . '$HOME/tools/google-cloud-sdk/completion.bash.inc'; fi
+. "$HOME/.cargo/env"
