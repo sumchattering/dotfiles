@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+alias python='python3'
 
 #Sublime Shortcut
 alias s="~/bin/subl"

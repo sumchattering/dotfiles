@@ -106,7 +106,7 @@
 [core]
 
 	# Use custom `.gitignore` and `.gitattributes`
-	excludesfile = ~/.gitignore
+	excludesfile = /Users/sumeruchatterjee/.gitignore
 	attributesfile = ~/.gitattributes
 
 	# Treat spaces before tabs and all kinds of trailing whitespace as an error
@@ -227,3 +227,6 @@
 	mergeoptions = --no-ff
 [branch "develop"]
 	mergeoptions = --no-ff
+[user]
+	name = Sumeru Chatterjee
+	email = sumeru.chatterjee@me.com
