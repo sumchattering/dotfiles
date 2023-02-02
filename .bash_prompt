@@ -1,4 +1,5 @@
 
+
 function parse_git_branch() {
 	local s='';
 	local branchName='';
@@ -41,6 +42,10 @@ function parse_git_branch() {
 			git rev-parse --short HEAD 2> /dev/null || \
 			echo '(unknown)')";
 
+		# branchName is greater than 20 characters then truncate it to 20 and add ....
+		if [ ${#branchName} -gt 20 ]; then
+			branchName="${branchName:0:20}....";
+		fi;
 
 		echo -e "[${1}${branchName}${blue}${s}]";
 	else
@@ -58,6 +63,10 @@ function parse_hg_branch {
 
 function last_two_dirs {
 	pwd |rev| awk -F / '{print $1,$2}' | rev | sed s_\ _/_
+}
+
+function last_dir {
+	pwd |rev| awk -F / '{print $1}' | rev
 }
 
 function parse_hg_git_branch {
@@ -79,7 +88,7 @@ function parse_hg_git_branch {
 }
 
 #Customize the prompt
-PS1="\[\033[01;32m\]\u\[\033[00m\]:\[\033[01;34m\]\$(last_two_dirs)\[\033[00m\]\$(parse_hg_git_branch)"
+PS1="\[\033[01;32m\]\u\[\033[00m\]:\[\033[01;34m\]\$(last_dir)\[\033[00m\]\$(parse_hg_git_branch)"
 case `id -u` in
 	  0) PS1="${PS1}# ";;
 	  *) PS1="${PS1}$ ";;

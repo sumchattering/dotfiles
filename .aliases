@@ -1,6 +1,3 @@
-#!/usr/bin/env bash
-alias python='python3'
-
 #Sublime Shortcut
 alias s="~/bin/subl"
 
@@ -33,6 +30,7 @@ else # macOS `ls`
 	colorflag="-G"
 	export LSCOLORS='BxBxhxDxfxhxhxhxhxcxcx'
 fi
+
 
 # List all files colorized in long format
 alias l="ls -lF ${colorflag}"
@@ -144,6 +142,7 @@ alias airport='/System/Library/PrivateFrameworks/Apple80211.framework/Versions/C
 # find . -name .gitattributes | map dirname
 alias map="xargs -n1"
 
+
 # One of @janmoesen’s ProTip™s
 for method in GET HEAD POST PUT DELETE TRACE OPTIONS; do
 	alias "${method}"="lwp-request -m '${method}'"
@@ -153,7 +152,8 @@ done
 command -v grunt > /dev/null && alias grunt="grunt --stack"
 
 #Disk usage of a git repo
-alias reposize="du -hs $(git rev-parse --show-toplevel)"
+#Disabling this line since it produces an output when not in a git repository
+#alias reposize="git rev-parse --is-inside-work-tree 2>/dev/null == 'true' && du -hs $(git rev-parse --show-toplevel)"
 
 # Stuff I never really use but cannot delete either because of http://xkcd.com/530/
 alias stfu="osascript -e 'set volume output muted true'"
@@ -174,6 +174,8 @@ alias path='echo -e ${PATH//:/\\n}'
 
 #aliases from alias.sh
 alias gl="git log --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
+alias gpoh="(set -x; git push origin HEAD)"
+alias gbclean="(set -x; git branch --merged | egrep -v \"(^\*|master|main|dev|develop)\" | xargs git branch -d)"
 alias lr='ls -R | grep ":$" | sed -e '\''s/:$//'\'' -e '\''s/[^-][^\/]*\//--/g'\'' -e '\''s/^/   /'\'' -e '\''s/-/|/'\'''
 alias l.='ls -d .* --color=auto'
 alias freq='cut -f1 -d" " ~/.bash_history | sort | uniq -c | sort -nr | head -n 30'

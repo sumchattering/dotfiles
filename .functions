@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+
+function pip-install-save { 
+    pip install $1 && pip freeze | grep $1 >> requirements.txt
+}
+
 # Create a new directory and enter it
 function mkd() {
 	mkdir -p "$@" && cd "$_";
