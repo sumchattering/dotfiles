@@ -1,5 +1,83 @@
 #!/usr/bin/env bash
 
+# function to automaticaly create a git commit 
+gcauto () {
+	# check if we are on a branch
+	if ! git symbolic-ref --short HEAD > /dev/null 2>&1 ; then
+		echo "Not on a branch, aborting"
+		return 1
+	fi
+
+	# check if we have any changes to commit
+	if ! git status --porcelain | grep -q . ; then
+		echo "No changes to commit, aborting"
+		return 1
+	fi
+
+	BRANCH_NAME=$(git symbolic-ref --short HEAD)
+	BRANCH_NAME="${BRANCH_NAME##*/}"
+	if [[ $BRANCH_NAME =~ ^(TRA|tra|Tra)-[[:digit:]]+.* ]] ; then
+		DESCRIPTION=$(echo "$BRANCH_NAME" | sed -E 's/(^(TRA|tra|Tra)-[[:digit:]]+)(.*)/\3/')
+		# replace all non alphanumeric characters with spaces
+		DESCRIPTION=$(echo "$DESCRIPTION" | sed -E 's/[^[:alnum:]]/ /g')
+		FULL_DESCRIPTION="Some work on$DESCRIPTION"
+		git commit -am "$FULL_DESCRIPTION"
+	else
+		git commit -am "Some updates"
+	fi
+}
+
+# function to kill all docker processes
+function kdo() {
+	  # check if not docker processes are running
+	  if ! ps ax|grep -i docker|egrep -iv 'grep|com.docker.vmnetd' > /dev/null 2>&1; then
+	    echo "No Docker processes running"
+	    return 0
+	  fi
+
+      ps ax|grep -i docker|egrep -iv 'grep|com.docker.vmnetd'|awk '{print $1}'|xargs kill
+	  echo "Docker processes killed"
+}
+
+# function to start docker
+function sdo() {
+	  # check if docker is already running
+	  if docker info > /dev/null 2>&1; then
+	    echo "Docker is already running"
+		echo "Docker version: $(docker version --format '{{.Server.Version}}')"
+	    echo "Docker API version: $(docker version --format '{{.Server.APIVersion}}')"
+	    echo "Docker root directory: $(docker info --format '{{.DockerRootDir}}')"
+	    return 0
+	  fi
+
+	  echo "Starting Docker"
+	  open /Applications/Docker.app
+	  echo "Waiting for Docker to start"
+	  while ! docker info > /dev/null 2>&1; do
+	    sleep 1
+	  done
+	  echo "Docker started successfully"
+	  echo "Docker version: $(docker version --format '{{.Server.Version}}')"
+	  echo "Docker API version: $(docker version --format '{{.Server.APIVersion}}')"
+	  echo "Docker root directory: $(docker info --format '{{.DockerRootDir}}')"
+}
+
+# function to stop docker
+function qdo() {
+	  # check if docker is running
+	  if ! docker info > /dev/null 2>&1; then
+	    echo "Docker is not running"
+	    return 0
+	  fi
+
+	  echo "Stopping Docker"
+	  osascript -e 'quit app "Docker"'
+	  echo "Waiting for Docker to stop"
+	  while docker info > /dev/null 2>&1; do
+	    sleep 1
+	  done
+	  echo "Docker stopped successfully"
+}
 
 function pip-install-save { 
     pip install $1 && pip freeze | grep $1 >> requirements.txt

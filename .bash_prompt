@@ -42,9 +42,9 @@ function parse_git_branch() {
 			git rev-parse --short HEAD 2> /dev/null || \
 			echo '(unknown)')";
 
-		# branchName is greater than 20 characters then truncate it to 20 and add ....
-		if [ ${#branchName} -gt 20 ]; then
-			branchName="${branchName:0:20}....";
+		# branchName is greater than 30 characters then truncate it to 30 and add ....
+		if [ ${#branchName} -gt 30 ]; then
+			branchName="${branchName:0:30}....";
 		fi;
 
 		echo -e "[${1}${branchName}${blue}${s}]";

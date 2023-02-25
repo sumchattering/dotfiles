@@ -5,10 +5,6 @@ if ! command -v brew &> /dev/null; then
 	export PATH="/usr/local/bin:/usr/local/sbin:/opt/homebrew/bin:$PATH";
 fi;
 
-export PATH="$(brew --prefix llvm@15)/bin":$PATH
-export LDFLAGS="$LDFLAGS -L$(brew --prefix llvm@15)/lib"
-export CPPFLAGS="$CPPFLAGS -I$(brew --prefix llvm@15)/include"
-
 # Add `~/bin` to the `$PATH`
 export PATH="$HOME/bin:$PATH";
 
@@ -16,6 +12,7 @@ export NVM_DIR=~/.nvm
 source $(brew --prefix nvm)/nvm.sh
 
 export PATH=~/miniconda/bin:$PATH
+# export PATH="/usr/local/anaconda3/bin:$PATH"  # commented out by conda initialize
 
 # Add ruby to the path
 export PATH="/usr/local/opt/ruby/bin:$PATH"
@@ -59,7 +56,10 @@ complete -o "nospace" -W "Contacts Calendar Dock Finder Mail Safari iTunes Syste
 export PATH=$(cat $HOME/.dynamicpaths)$PATH
 
 # Add tab completion for many Bash commands
-if [ -f $(brew --prefix)/etc/bash_completion ]; then
+
+if [[ -r "$(brew --prefix)/etc/profile.d/bash_completion.sh" ]]; then
+	. "$(brew --prefix)/etc/profile.d/bash_completion.sh"
+elif [ -f $(brew --prefix)/etc/bash_completion ]; then
     . $(brew --prefix)/etc/bash_completion
 elif [ -f /etc/bash_completion ]; then
 	source /etc/bash_completion;
@@ -68,8 +68,8 @@ else
 fi;
 
 # Load the git completion script
-if [ -f ~/.git-completion.bash ]; then
-	source ~/.git-completion.bash;
+if [ -f ~/.git-completion.sh ]; then
+	source ~/.git-completion.sh;
 else
 	echo "Git completions not installed"
 fi;
@@ -79,7 +79,8 @@ if type _git &> /dev/null; then
 	complete -o default -o nospace -F _git g;
 fi;
 
-eval "$(/opt/homebrew/bin/brew shellenv)"
+HOMEBREW_PATH="$(brew --prefix)/bin"
+eval "$($HOMEBREW_PATH/brew shellenv)"
 
 export PATH="/Users/sumeruchatterjee/.ebcli-virtual-env/executables:$PATH"
 
@@ -102,14 +103,14 @@ export PATH="/Users/sumeruchatterjee/.local/share/solana/install/active_release/
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/Users/sumeruchatterjee/miniconda/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+__conda_setup="$('/usr/local/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 if [ $? -eq 0 ]; then
     eval "$__conda_setup"
 else
-    if [ -f "/Users/sumeruchatterjee/miniconda/etc/profile.d/conda.sh" ]; then
-        . "/Users/sumeruchatterjee/miniconda/etc/profile.d/conda.sh"
+    if [ -f "/usr/local/anaconda3/etc/profile.d/conda.sh" ]; then
+        . "/usr/local/anaconda3/etc/profile.d/conda.sh"
     else
-        export PATH="/Users/sumeruchatterjee/miniconda/bin:$PATH"
+        export PATH="/usr/local/anaconda3/bin:$PATH"
     fi
 fi
 unset __conda_setup

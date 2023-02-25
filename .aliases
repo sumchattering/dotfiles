@@ -1,11 +1,47 @@
 #Sublime Shortcut
 alias s="~/bin/subl"
 
+# Meta
+alias reload="source ~/.bash_profile"
+alias gitalias="alias | grep git"
+
+#aliases from alias.sh
+alias freq='cat ~/.bash_history | sort | uniq -c | sort -nr | head -n 30'
+alias active='grep -v -e "^$" -e"^ *#"'
+alias tm='ps -ef | grep'
+
+# Shortcuts
+alias d="cd ~/Dropbox"
+alias dl="cd ~/Downloads"
+alias dt="cd ~/Desktop"
+alias p="cd ~/Projects"
+
 #Gcc with all warnings
 alias gccw="gcc -Wall -Wall -Werror -Wextra -pedantic"
 
-# Gtree
+# git aliases
+alias g="git"
 alias gtree="git ls-tree -r --name-only HEAD | tree --fromfile"
+alias gl="git log --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
+alias gpoh="(set -x; git push origin HEAD)"
+alias gvl='git log --graph --full-history --all --color --pretty=format:"%x1b[31m%h%x09%x1b[32m%d%x1b[0m%x20%s"'
+alias gbclean="(set -x; git branch --merged | egrep -v \"(^\*|master|main|dev|develop)\" | xargs git branch -d)"
+alias gpr="git pull --rebase"
+alias gpoh="git push origin HEAD"
+alias gpof="git push origin HEAD -f"
+alias gs="git status"
+alias gall="git add -A"
+alias gcm="git commit -m"
+alias gcam="git commit -am"
+alias gcamend="git commit --amend"
+alias grh1="git reset HEAD^1"
+alias gl="git log"
+alias gl1="git log --oneline"
+alias glp="git log --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
+alias gco="git checkout"
+alias gcom="git checkout main"
+
+
 
 # Easier navigation: .., ..., ...., ....., ~ and -
 alias ..="cd .."
@@ -15,12 +51,6 @@ alias .....="cd ../../../.."
 alias ~="cd ~" # `cd` is probably faster to type though
 alias -- -="cd -"
 
-# Shortcuts
-alias d="cd ~/Dropbox"
-alias dl="cd ~/Downloads"
-alias dt="cd ~/Desktop"
-alias p="cd ~/projects"
-alias g="git"
 
 # Detect which `ls` flavor is in use
 if ls --color > /dev/null 2>&1; then # GNU `ls`
@@ -43,6 +73,10 @@ alias lsd="ls -lF ${colorflag} | grep --color=never '^d'"
 
 # Always use color output for `ls`
 alias ls="command ls ${colorflag}"
+
+alias lr='ls -R | grep ":$" | sed -e '\''s/:$//'\'' -e '\''s/[^-][^\/]*\//--/g'\'' -e '\''s/^/   /'\'' -e '\''s/-/|/'\'''
+
+alias l.='ls -d .* --color=auto'
 
 # Always enable colored `grep` output
 # Note: `GREP_OPTIONS="--color=auto"` is deprecated, hence the alias usage.
@@ -128,6 +162,7 @@ alias mergepdf='gs -q -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=_merged.p
 
 # Disable Spotlight
 alias spotoff="sudo mdutil -a -i off"
+
 # Enable Spotlight
 alias spoton="sudo mdutil -a -i on"
 
@@ -171,17 +206,6 @@ alias reload="exec ${SHELL} -l"
 
 # Print each PATH entry on a separate line
 alias path='echo -e ${PATH//:/\\n}'
-
-#aliases from alias.sh
-alias gl="git log --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
-alias gpoh="(set -x; git push origin HEAD)"
-alias gbclean="(set -x; git branch --merged | egrep -v \"(^\*|master|main|dev|develop)\" | xargs git branch -d)"
-alias lr='ls -R | grep ":$" | sed -e '\''s/:$//'\'' -e '\''s/[^-][^\/]*\//--/g'\'' -e '\''s/^/   /'\'' -e '\''s/-/|/'\'''
-alias l.='ls -d .* --color=auto'
-alias freq='cut -f1 -d" " ~/.bash_history | sort | uniq -c | sort -nr | head -n 30'
-alias active='grep -v -e "^$" -e"^ *#"'
-alias gvl='git log --graph --full-history --all --color --pretty=format:"%x1b[31m%h%x09%x1b[32m%d%x1b[0m%x20%s"'
-alias tm='ps -ef | grep'
 
 #formatting commands from clipboard
 alias formatcommandclipboard='pbpaste > /tmp/command.file ; formatcommand.py /tmp/command.file'
