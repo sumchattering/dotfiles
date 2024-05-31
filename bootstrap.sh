@@ -28,5 +28,3 @@ unset doIt;
 
 #Add current directory to path
 export PATH=$PWD:$PATH
-
-lets add an option called --no-confirm where it doesn't ask for confirmation
