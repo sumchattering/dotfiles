@@ -60,13 +60,10 @@ if [ "$(uname)" == "Darwin" ]; then
 
 	if [[ -r "$(brew --prefix)/etc/profile.d/bash_completion.sh" ]]; then
 		. "$(brew --prefix)/etc/profile.d/bash_completion.sh"
-		echo "Bash completions installed"
 	elif [ -f $(brew --prefix)/etc/bash_completion ]; then
 		. $(brew --prefix)/etc/bash_completion
-		echo "Bash completions installed"
 	elif [ -f /etc/bash_completion ]; then
 		source /etc/bash_completion
-		echo "Bash completions installed"
 	else
 		echo "Bash completions not installed"
 	fi
@@ -74,7 +71,6 @@ if [ "$(uname)" == "Darwin" ]; then
 	# Load the git completion script
 	if [ -f ~/.git-completion.sh ]; then
 		source ~/.git-completion.sh
-		echo "Git completions installed"
 	else
 		echo "Git completions not installed"
 	fi
@@ -121,7 +117,6 @@ else
 	# Linux
 	if [ -f ~/.git-completion.sh ]; then
 		source ~/.git-completion.sh
-		echo "Git completions installed"
 	else
 		echo "Git completions not installed"
 	fi
@@ -129,10 +124,8 @@ else
 	if ! shopt -oq posix; then
 		if [ -f /usr/share/bash-completion/bash_completion ]; then
 			. /usr/share/bash-completion/bash_completion
-			echo "Bash completions installed"
 		elif [ -f /etc/bash_completion ]; then
 			. /etc/bash_completion
-			echo "Bash completions installed"
 		fi
 	fi
 
