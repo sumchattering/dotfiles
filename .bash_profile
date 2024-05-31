@@ -136,6 +136,11 @@ else
 		fi
 	fi
 
+	for file in ~/.{path,bash_prompt,exports,aliases,functions,extra}; do
+		[ -r "$file" ] && [ -f "$file" ] && source "$file"
+	done
+	unset file
+
 	# Case-insensitive globbing (used in pathname expansion)
 	shopt -s nocaseglob
 
@@ -157,5 +162,10 @@ else
 
 	if type _git &>/dev/null; then
 		complete -o default -o nospace -F _git g
+	fi
+
+	# Append the dynamic paths
+	if [ -f $HOME/.dynamicpaths ]; then
+		export PATH=$(cat $HOME/.dynamicpaths)$PATH
 	fi
 fi
