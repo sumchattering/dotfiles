@@ -12,7 +12,7 @@ function doIt() {
         home_dir_file="$HOME/$file"
         if [ -f $home_dir_file ]; then
             if [ "$file" == ".gitconfig" ]; then
-                sed '/\[user\]/d; /\s*name = $GIT_COMMITTER_NAME/d; /\s*email = $GIT_COMMITTER_EMAIL/d' ~/"$file" >"$file"
+                sed '/\[user\]/d; /\s*name = '"$GIT_COMMITTER_NAME"'/d; /\s*email = '"$GIT_COMMITTER_EMAIL"'/d' ~/"$file" >"$file"
                 echo "Updated and cleaned: $file"
             else
                 cp ~/"$file" "$file"

@@ -220,5 +220,3 @@ mergeoptions = --no-ff
 [init]
 
 defaultBranch = main
-	name = Sumeru Chatterjee
-	email = sumeru.chatterjee@xelion.com
