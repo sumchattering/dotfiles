@@ -1,0 +1,150 @@
+# AI Functions
+
+MODEL="gpt-4o-mini"
+
+check_if_sgpt_installed() {
+    if ! command -v sgpt &>/dev/null; then
+        echo "sgpt is not installed. Please install it with 'pip install sgpt'." >&2
+        return 1
+    fi
+}
+
+ai_func() {
+    local s=$([[ $1 == cmd ]] && echo "--shell" && shift)
+    [[ $# -eq 0 ]] && echo "Provide a query." >&2 && return 1
+    user_question="$*"
+    DEBUG_FLAG=0
+    if [[ "$user_question" == *"--debug"* ]]; then
+        DEBUG_FLAG=1
+        user_question=${user_question/--debug/}
+    fi
+    user_question=$(echo "$user_question" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+    [[ -z "$user_question" ]] && user_question="Explain."
+    check_if_sgpt_installed || return 1
+    if [[ $DEBUG_FLAG -eq 1 ]]; then
+        set -x
+    fi
+    sgpt --model $MODEL $s "$user_question"
+    if [[ $DEBUG_FLAG -eq 1 ]]; then
+        set +x
+    fi
+}
+
+ai() { ai_func "$@"; }
+aicmd() { ai_func cmd "$@"; }
+_get_clip() { pbpaste 2>/dev/null || xclip -sel clip -o 2>/dev/null || xsel --clip --out 2>/dev/null || echo "No clipboard util found" >&2; }
+pasteai() {
+    local s=$([[ $1 == cmd ]] && echo "--shell" && shift)
+    [[ $# -eq 0 ]] && echo "Provide a query." >&2 && return 1
+    local c=$(_get_clip) || return 1
+    local user_question="$*"
+    DEBUG_FLAG=0
+    if [[ "$user_question" == *"--debug"* ]]; then
+        DEBUG_FLAG=1
+        user_question=${user_question/--debug/}
+    fi
+    user_question=$(echo "$user_question" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+    [[ -z "$user_question" ]] && user_question="Explain."
+    if [[ $DEBUG_FLAG -eq 1 ]]; then
+        set -x
+    fi
+    check_if_sgpt_installed || return 1
+    sgpt --model $MODEL $s "$c
+
+$user_question"
+    if [[ $DEBUG_FLAG -eq 1 ]]; then
+        set +x
+    fi
+}
+
+pasteaicmd() { pasteai cmd "$@"; }
+lastai() { lastNai 1 "$@"; }
+last2ai() { lastNai 2 "$@"; }
+last3ai() { lastNai 3 "$@"; }
+lastaicmd() { lastai cmd "$@"; }
+last2aicmd() { last2ai cmd "$@"; }
+last3aicmd() { last3ai cmd "$@"; }
+
+lastNai() {
+    local n=$1
+    shift
+    local s=""
+    if [[ $1 == "cmd" ]]; then
+        s="--shell"
+        shift
+    fi
+    local user_question="$*"
+    DEBUG_FLAG=0
+    if [[ "$user_question" == *"--debug"* ]]; then
+        DEBUG_FLAG=1
+        user_question=${user_question/--debug/}
+    fi
+    user_question=$(echo "$user_question" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+    [[ -z "$user_question" ]] && user_question="Explain."
+    local commands=$(history | grep -vE 'last[2-3]?ai|last[2-3]?aicmd' | tail -n $n | sed 's/^[ ]*[0-9]*[ ]*//')
+    [[ -z "$commands" ]] && echo "No valid previous commands found." >&2 && return 1
+
+    local output=""
+    while IFS= read -r cmd; do
+        echo "Running: $cmd"
+        if [[ "$cmd" == "top" ]]; then
+            echo "Running top in non-interactive mode."
+            local cmd_output
+            cmd_output=$(top -b -n 1 | head -n 20)
+            output="Command: $cmd (non-interactive mode)
+
+Output:
+$cmd_output
+
+$output"
+        elif [[ "$cmd" =~ ^(htop|vim|nano|less|more|tail\ -f|watch) ]]; then
+            echo "Command '$cmd' may not exit. Skipping execution."
+            output="Command: $cmd
+
+Output: Skipped execution (command may not exit automatically)
+
+$output"
+        else
+            local cmd_output
+            cmd_output=$(timeout 5s bash -c "$cmd" 2>&1)
+            local exit_status=$?
+            if [ $exit_status -eq 124 ]; then
+                echo "Command '$cmd' timed out after 5 seconds. Skipping."
+                output="Command: $cmd
+
+Output: Command timed out after 5 seconds
+
+$output"
+            else
+                output="Command: $cmd
+
+Output:
+$cmd_output
+
+$output"
+            fi
+        fi
+    done <<<"$commands"
+    if [[ $DEBUG_FLAG -eq 1 ]]; then
+        set -x
+    fi
+    check_if_sgpt_installed || return 1
+    sgpt -model $MODEL $s "Last $n commands and their outputs:
+
+$output
+User Input: $user_question"
+    if [[ $DEBUG_FLAG -eq 1 ]]; then
+        set +x
+    fi
+}
+
+ailist() {
+    echo "Available AI commands:"
+    echo "ai: Call AI function with provided arguments"
+    echo "aicmd: Call AI function in command mode"
+    echo "pasteai: Use clipboard content as input for AI function"
+    echo "pasteaicmd: Use clipboard content as input for AI function in command mode"
+    echo "lastai, last2ai, last3ai: Use the last 1, 2, or 3 commands and their outputs as input for AI"
+    echo "lastaicmd, last2aicmd, last3aicmd: Same as above, but in command mode"
+    echo "ailist: Display this list of available AI commands"
+}
