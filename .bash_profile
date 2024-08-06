@@ -22,7 +22,7 @@ if [ "$(uname)" == "Darwin" ]; then
 	# * ~/.path can be used to extend `$PATH`.
 	# * ~/.extra can be used for other settings you don’t want to commit.
 
-	for file in ~/.{path,bash_prompt,exports,aliases,functions,extra}; do
+	for file in ~/.{path,bash_prompt,exports,aliases,functions,extra,ai_functions}; do
 		[ -r "$file" ] && [ -f "$file" ] && source "$file"
 	done
 	unset file
@@ -162,3 +162,6 @@ else
 		export PATH=$(cat $HOME/.dynamicpaths)$PATH
 	fi
 fi
+
+# Created by `pipx` on 2024-07-23 14:52:22
+export PATH="$PATH:/Users/sumeruchatterjee/.local/bin"

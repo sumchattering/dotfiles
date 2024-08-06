@@ -1,29 +1,42 @@
-# Source .bash_profile if in an interactive shell
 [ -n "$PS1" ] && source ~/.bash_profile
 
-# Load Cargo environment if available
+# tabtab source for serverless package
+# uninstall by removing these lines or running `tabtab uninstall serverless`
+[ -f /usr/local/lib/node_modules/serverless/node_modules/tabtab/.completions/serverless.bash ] && . /usr/local/lib/node_modules/serverless/node_modules/tabtab/.completions/serverless.bash
+# tabtab source for sls package
+# uninstall by removing these lines or running `tabtab uninstall sls`
+[ -f /usr/local/lib/node_modules/serverless/node_modules/tabtab/.completions/sls.bash ] && . /usr/local/lib/node_modules/serverless/node_modules/tabtab/.completions/sls.bash
+# tabtab source for slss package
+# uninstall by removing these lines or running `tabtab uninstall slss`
+[ -f /usr/local/lib/node_modules/serverless/node_modules/tabtab/.completions/slss.bash ] && . /usr/local/lib/node_modules/serverless/node_modules/tabtab/.completions/slss.bash
+
 if [ -d "$HOME/.cargo" ]; then
     . "$HOME/.cargo/env"
 fi
 
-# Add RVM to PATH for scripting, make sure this is the last PATH variable change
+# Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
 if [ -d "$HOME/.rvm/bin" ]; then
     export PATH="$PATH:$HOME/.rvm/bin"
 fi
 
-# Load NVM and its bash completion if available
 if [ -d "$HOME/.nvm" ]; then
     export NVM_DIR="$HOME/.nvm"
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"                   # This loads nvm
     [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion" # This loads nvm bash_completion
 fi
 
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f '$HOME/google-cloud-sdk/path.bash.inc' ]; then . '$HOME/google-cloud-sdk/path.bash.inc'; fi
 
-# The next line enables shell command completion for gcloud.
-if [ -f '$HOME/google-cloud-sdk/completion.bash.inc' ]; then . '$HOME/google-cloud-sdk/completion.bash.inc'; fi
+# Created by `pipx` on 2024-07-23 14:52:22
+export PATH="$PATH:/Users/sumeruchatterjee/.local/bin"
+source /Users/sumeruchatterjee/Projects/tradofire-backend/scripts/shell/commands.sh
 
-if [ -d "$HOME/google-cloud-sdk/bin" ]; then
-    export PATH="$HOME/google-cloud-sdk/bin:$PATH"
-fi
+export PATH="$HOME/.pyenv/bin:$PATH"
+eval "$(pyenv init --path)"
+eval "$(pyenv init -)"
+eval "$(pyenv virtualenv-init -)"
+pyenv_global_with_symlink() {
+    pyenv global "$@"
+    ln -sf $(pyenv which python3) $(pyenv root)/shims/python
+}
+alias pyenv-set-global='pyenv_global_with_symlink'
+
