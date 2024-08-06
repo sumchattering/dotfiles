@@ -68,32 +68,11 @@ st = status
 ls = log --pretty=format:"%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate
 dt = "!f() { git difftool $1^ $1; }; f"
 dtfiles = "!f() { git diff --name-status $1^ $1; }; f"
-pullall = pull
-submodule foreach git pull
 gl = "log --color --graph --pretty='format:%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
 gui = !sh -c '/usr/local/git/libexec/git-core/git-gui'
 
 # List contributors with number of commits
 contributors = shortlog --summary --numbered
-
-# Merge GitHub pull request on top of the current branch or,
-# if a branch name is specified, on top of the specified branch
-mpr = "!f() { \
-		declare currentBranch=\"$(git symbolic-ref --short HEAD)\"; \
-		declare branch=\"${2:-$currentBranch}\"; \
-		if [ $(
-	printf \"%s\" \"$1\" | grep '^[0-9]\\+$' >/dev/null
-	printf $?
-) -eq 0 ]; then \
-			git fetch origin refs/pull/$1/head:pr/$1 && \
-			git checkout -B $branch && \
-			git rebase $branch pr/$1 && \
-			git checkout -B $branch && \
-			git merge pr/$1 && \
-			git branch -D pr/$1 && \
-			git commit --amend -m \"$(git log -1 --pretty=%B)\n\nCloses #$1.\"; \
-		fi \
-	}; f"
 
 # view all deleted lines ignoring whitespace
 reposize = "du -hs $(git rev-parse --show-toplevel)"
@@ -241,3 +220,5 @@ mergeoptions = --no-ff
 [init]
 
 defaultBranch = main
+	name = Sumeru Chatterjee
+	email = sumeru.chatterjee@xelion.com
