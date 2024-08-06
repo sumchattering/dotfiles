@@ -60,10 +60,13 @@ if [ "$(uname)" == "Darwin" ]; then
 
 	if [[ -r "$(brew --prefix)/etc/profile.d/bash_completion.sh" ]]; then
 		. "$(brew --prefix)/etc/profile.d/bash_completion.sh"
+		echo "Bash completions installed"
 	elif [ -f $(brew --prefix)/etc/bash_completion ]; then
 		. $(brew --prefix)/etc/bash_completion
+		echo "Bash completions installed"
 	elif [ -f /etc/bash_completion ]; then
 		source /etc/bash_completion
+		echo "Bash completions installed"
 	else
 		echo "Bash completions not installed"
 	fi
@@ -71,6 +74,7 @@ if [ "$(uname)" == "Darwin" ]; then
 	# Load the git completion script
 	if [ -f ~/.git-completion.sh ]; then
 		source ~/.git-completion.sh
+		echo "Git completions installed"
 	else
 		echo "Git completions not installed"
 	fi
@@ -83,13 +87,13 @@ if [ "$(uname)" == "Darwin" ]; then
 	HOMEBREW_PATH="$(brew --prefix)/bin"
 	eval "$($HOMEBREW_PATH/brew shellenv)"
 
-	export PATH="/Users/sumeruchatterjee/.ebcli-virtual-env/executables:$PATH"
+	export PATH="$HOME/.ebcli-virtual-env/executables:$PATH"
 
 	# The next line updates PATH for the Google Cloud SDK.
-	if [ -f '/Users/sumeruchatterjee/google-cloud-sdk/path.bash.inc' ]; then . '/Users/sumeruchatterjee/google-cloud-sdk/path.bash.inc'; fi
+	if [ -f '$HOME/google-cloud-sdk/path.bash.inc' ]; then . '$HOME/google-cloud-sdk/path.bash.inc'; fi
 
 	# The next line enables shell command completion for gcloud.
-	if [ -f '/Users/sumeruchatterjee/google-cloud-sdk/completion.bash.inc' ]; then . '/Users/sumeruchatterjee/google-cloud-sdk/completion.bash.inc'; fi
+	if [ -f '$HOME/google-cloud-sdk/completion.bash.inc' ]; then . '$HOME/google-cloud-sdk/completion.bash.inc'; fi
 
 	#pyenv
 	export PYENV_ROOT="$HOME/.pyenv"
@@ -117,6 +121,7 @@ else
 	# Linux
 	if [ -f ~/.git-completion.sh ]; then
 		source ~/.git-completion.sh
+		echo "Git completions installed"
 	else
 		echo "Git completions not installed"
 	fi
@@ -124,15 +129,12 @@ else
 	if ! shopt -oq posix; then
 		if [ -f /usr/share/bash-completion/bash_completion ]; then
 			. /usr/share/bash-completion/bash_completion
+			echo "Bash completions installed"
 		elif [ -f /etc/bash_completion ]; then
 			. /etc/bash_completion
+			echo "Bash completions installed"
 		fi
 	fi
-
-	for file in ~/.{path,bash_prompt,exports,aliases,functions,extra}; do
-		[ -r "$file" ] && [ -f "$file" ] && source "$file"
-	done
-	unset file
 
 	# Case-insensitive globbing (used in pathname expansion)
 	shopt -s nocaseglob
@@ -164,4 +166,4 @@ else
 fi
 
 # Created by `pipx` on 2024-07-23 14:52:22
-export PATH="$PATH:/Users/sumeruchatterjee/.local/bin"
+export PATH="$PATH:$HOME/.local/bin"

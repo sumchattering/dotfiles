@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 cd "$(dirname "${BASH_SOURCE}")"
-
+echo "Current directory: $(pwd)"
+echo "Home directory: $HOME"
 function doIt() {
     files_to_update=$(git ls-files)
 

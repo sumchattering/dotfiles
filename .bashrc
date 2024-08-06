@@ -15,10 +15,9 @@ if [ -d "$HOME/.nvm" ]; then
     [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion" # This loads nvm bash_completion
 fi
 
-
 # Created by `pipx` on 2024-07-23 14:52:22
-export PATH="$PATH:/Users/sumeruchatterjee/.local/bin"
-source /Users/sumeruchatterjee/Projects/tradofire-backend/scripts/shell/commands.sh
+export PATH="$PATH:$HOME/.local/bin"
+source $HOME/Projects/tradofire-backend/scripts/shell/commands.sh
 
 export PATH="$HOME/.pyenv/bin:$PATH"
 eval "$(pyenv init --path)"
@@ -29,4 +28,3 @@ pyenv_global_with_symlink() {
     ln -sf $(pyenv which python3) $(pyenv root)/shims/python
 }
 alias pyenv-set-global='pyenv_global_with_symlink'
-
