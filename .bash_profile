@@ -73,7 +73,7 @@ if [ "$(uname)" = "Darwin" ]; then
 		# Load the git completion script
 		if [ -f ~/.git-completion.sh ]; then
 			source ~/.git-completion.sh
-			echo "Git completions installed"
+			#echo "Git completions installed"
 		else
 			echo "Git completions not installed"
 		fi
@@ -105,10 +105,17 @@ if [ "$(uname)" = "Darwin" ]; then
 		autoload -Uz compinit
 		compinit
 
+		# History substring search - up/down arrows search by prefix
+		autoload -U history-search-end
+		zle -N history-beginning-search-backward-end history-search-end
+		zle -N history-beginning-search-forward-end history-search-end
+		bindkey "^[[A" history-beginning-search-backward-end
+		bindkey "^[[B" history-beginning-search-forward-end
+
 		# Load git completions for zsh
 		if [ -f ~/.git-completion.sh ]; then
 			zstyle ':completion:*:*:git:*' script ~/.git-completion.sh
-			echo "Git completions installed"
+			#echo "Git completions installed"
 		else
 			echo "Git completions not installed"
 		fi
@@ -163,7 +170,7 @@ else
 		# Bash-specific settings
 		if [ -f ~/.git-completion.sh ]; then
 			source ~/.git-completion.sh
-			echo "Git completions installed"
+			#echo "Git completions installed"
 		else
 			echo "Git completions not installed"
 		fi
@@ -223,10 +230,17 @@ else
 		autoload -Uz compinit
 		compinit
 
+		# History substring search - up/down arrows search by prefix
+		autoload -U history-search-end
+		zle -N history-beginning-search-backward-end history-search-end
+		zle -N history-beginning-search-forward-end history-search-end
+		bindkey "^[[A" history-beginning-search-backward-end
+		bindkey "^[[B" history-beginning-search-forward-end
+
 		# Load git completions for zsh
 		if [ -f ~/.git-completion.sh ]; then
 			zstyle ':completion:*:*:git:*' script ~/.git-completion.sh
-			echo "Git completions installed"
+			#echo "Git completions installed"
 		else
 			echo "Git completions not installed"
 		fi
