@@ -9,8 +9,11 @@ if [ "$(uname)" = "Darwin" ]; then
 	# Add `~/bin` to the `$PATH`
 	export PATH="$HOME/bin:$PATH"
 
-	export NVM_DIR=~/.nvm
-	source $(brew --prefix nvm)/nvm.sh
+	# Load NVM if installed
+	if command -v brew &>/dev/null && [ -f "$(brew --prefix nvm)/nvm.sh" ]; then
+		export NVM_DIR=~/.nvm
+		source $(brew --prefix nvm)/nvm.sh
+	fi
 
 	export PATH=~/miniconda/bin:$PATH
 	# export PATH="/usr/local/anaconda3/bin:$PATH"  # commented out by conda initialize
