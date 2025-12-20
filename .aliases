@@ -1,6 +1,8 @@
 #Sublime Shortcut
 alias s="~/bin/subl"
 
+alias context-drchatterjee="context --include-extension ts --include-extension tsx --exclude \"ui\" --exclude \".wrangler\" --exclude \".turbo\" --exclude \"*.sh\" --exclude \".*\" --exclude \"*.md\" --exclude \"*.js\" --exclude \"*.d.ts\" --exclude \"lib\"  --exclude \"rag-scripts\" --exclude horoscope-worker --exclude rag-worker"
+
 # Meta
 alias reload="source ~/.bash_profile"
 alias gitalias="alias | grep git"

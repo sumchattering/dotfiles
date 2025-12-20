@@ -4,7 +4,14 @@ MODEL="gpt-4o-mini"
 
 check_if_sgpt_installed() {
     if ! command -v sgpt &>/dev/null; then
-        echo "sgpt is not installed. Please install it with 'pip install sgpt'." >&2
+        echo "sgpt is not installed. Please install it with 'pipx install shell-gpt'." >&2
+        return 1
+    fi
+}
+
+check_if_timeout_installed() {
+    if ! command -v timeout &>/dev/null; then
+        echo "timeout command is not installed. Please install coreutils package." >&2
         return 1
     fi
 }
@@ -73,6 +80,9 @@ lastNai() {
         s="--shell"
         shift
     fi
+    
+    check_if_timeout_installed || return 1
+    
     local user_question="$*"
     DEBUG_FLAG=0
     if [[ "$user_question" == *"--debug"* ]]; then
@@ -129,7 +139,7 @@ $output"
         set -x
     fi
     check_if_sgpt_installed || return 1
-    sgpt -model $MODEL $s "Last $n commands and their outputs:
+    sgpt --model $MODEL $s "Last $n commands and their outputs:
 
 $output
 User Input: $user_question"
