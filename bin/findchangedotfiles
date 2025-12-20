@@ -1,0 +1,175 @@
+#!/bin/bash
+
+# Find all dotfiles in the repo that differ from home directory
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+HOME_DIR="$HOME"
+SUMMARY_MODE=false
+SINGLE_FILE=""
+COPY_BACK=false
+IGNORE_PATTERNS=()
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --summary)
+            SUMMARY_MODE=true
+            shift
+            ;;
+        --file)
+            SINGLE_FILE="$2"
+            shift 2
+            ;;
+        --copy-back)
+            COPY_BACK=true
+            shift
+            ;;
+        --ignore)
+            IGNORE_PATTERNS+=("$2")
+            shift 2
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
+
+if [[ "$SUMMARY_MODE" == false ]]; then
+    echo "Comparing dotfiles between repo and home directory..."
+    echo "Repo: $REPO_DIR"
+    echo "Home: $HOME_DIR"
+    echo ""
+fi
+
+# Find all dotfiles in repo root
+found_changes=false
+
+# If single file mode, just check that one file
+if [[ -n "$SINGLE_FILE" ]]; then
+    # Add leading dot if not present
+    if [[ "$SINGLE_FILE" != .* ]]; then
+        SINGLE_FILE=".$SINGLE_FILE"
+    fi
+    
+    dotfile="$REPO_DIR/$SINGLE_FILE"
+    if [[ ! -f "$dotfile" ]]; then
+        echo "Error: $SINGLE_FILE not found in repo"
+        exit 1
+    fi
+    
+    # Check if file matches any ignore pattern
+    if [[ ${#IGNORE_PATTERNS[@]} -gt 0 ]]; then
+        for pattern in "${IGNORE_PATTERNS[@]}"; do
+            if [[ "$SINGLE_FILE" == $pattern ]]; then
+                echo "No files to check (matched ignore pattern: $pattern)"
+                exit 0
+            fi
+        done
+    fi
+    
+    # Handle copy-back mode
+    if [[ "$COPY_BACK" == true ]]; then
+        home_file="$HOME_DIR/$SINGLE_FILE"
+        
+        if [[ ! -f "$home_file" ]]; then
+            echo "Error: $SINGLE_FILE not found in home directory"
+            exit 1
+        fi
+        
+        echo "This will copy:"
+        echo "  FROM: $home_file"
+        echo "  TO:   $dotfile"
+        echo ""
+        echo "This will OVERWRITE the file in the repo."
+        read -p "Are you sure? (y/N): " -n 1 -r
+        echo ""
+        
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            cp "$home_file" "$dotfile"
+            echo "✅ Copied $SINGLE_FILE from home to repo"
+        else
+            echo "❌ Copy cancelled"
+        fi
+        exit 0
+    fi
+    
+    dotfiles_to_check=("$dotfile")
+else
+    if [[ "$COPY_BACK" == true ]]; then
+        echo "Error: --copy-back requires --file <filename>"
+        exit 1
+    fi
+    dotfiles_to_check=("$REPO_DIR"/.*)
+fi
+
+for dotfile in "${dotfiles_to_check[@]}"; do
+    # Skip . and .. and .git directory
+    if [[ "$dotfile" == "$REPO_DIR/." || "$dotfile" == "$REPO_DIR/.." || "$dotfile" == "$REPO_DIR/.git" ]]; then
+        continue
+    fi
+    
+    # Only process files, not directories
+    if [[ ! -f "$dotfile" ]]; then
+        continue
+    fi
+    
+    filename=$(basename "$dotfile")
+    
+    # Skip if matches any ignore pattern
+    if [[ ${#IGNORE_PATTERNS[@]} -gt 0 ]]; then
+        skip=false
+        for pattern in "${IGNORE_PATTERNS[@]}"; do
+            if [[ "$filename" == $pattern ]]; then
+                skip=true
+                break
+            fi
+        done
+        if [[ "$skip" == true ]]; then
+            continue
+        fi
+    fi
+    
+    home_file="$HOME_DIR/$filename"
+    
+    # Check if file exists in home directory
+    if [[ ! -f "$home_file" ]]; then
+        found_changes=true
+        if [[ "$SUMMARY_MODE" == true ]]; then
+            printf "%s \033[33m(not in home)\033[0m\n" "$filename"
+        else
+            echo "⚠️  $filename - NOT FOUND in home directory"
+            echo ""
+        fi
+        continue
+    fi
+    
+    # Compare files
+    if ! diff -q "$dotfile" "$home_file" > /dev/null 2>&1; then
+        found_changes=true
+        
+        if [[ "$SUMMARY_MODE" == true ]]; then
+            # Calculate additions and deletions
+            diff_output=$(diff -u "$dotfile" "$home_file" 2>&1)
+            additions=$(echo "$diff_output" | grep -c "^+[^+]" || true)
+            deletions=$(echo "$diff_output" | grep -c "^-[^-]" || true)
+            
+            # Print with colors
+            printf "%s \033[32m+%d\033[0m \033[31m-%d\033[0m\n" "$filename" "$additions" "$deletions"
+        else
+            echo "🔴 $filename - MODIFIED (home differs from repo)"
+            echo "---"
+            # Use colored diff if available
+            if command -v colordiff &> /dev/null; then
+                diff -u "$dotfile" "$home_file" 2>&1 | colordiff | head -50
+            else
+                diff -u --color=always "$dotfile" "$home_file" 2>&1 | head -50
+            fi
+            echo ""
+        fi
+    fi
+done
+
+if [[ "$found_changes" == false && "$SUMMARY_MODE" == false ]]; then
+    echo "✅ All dotfiles are in sync!"
+fi
+
