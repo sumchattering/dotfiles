@@ -94,10 +94,6 @@ if [ "$(uname)" = "Darwin" ]; then
 		setopt APPEND_HISTORY
 		setopt SHARE_HISTORY
 
-		# Autocorrect typos in path names when using `cd`
-		setopt CORRECT
-		setopt CORRECT_ALL
-
 		# Enable extended globbing (** for recursive)
 		setopt EXTENDED_GLOB
 
@@ -218,10 +214,6 @@ else
 		# Append to the history file
 		setopt APPEND_HISTORY
 		setopt SHARE_HISTORY
-
-		# Autocorrect typos in path names when using `cd`
-		setopt CORRECT
-		setopt CORRECT_ALL
 
 		# Enable extended globbing (** for recursive)
 		setopt EXTENDED_GLOB
