@@ -1,5 +1,8 @@
 [alias]
 
+# Push current branch and recursively push all submodules
+superpush = "!git push origin HEAD && git submodule foreach 'git push origin HEAD'"
+
 # View abbreviated SHA, description, and history graph of the latest 20 commits.
 l = log --pretty=oneline -n 20 --graph --abbrev-commit
 
@@ -81,6 +84,7 @@ contributors = shortlog --summary --numbered
 
 # Show the user email for the current repository.
 whoami = config user.email
+acp = !git add -A && git commit -m \"${1:-Fixes}\" && git push origin HEAD
 
 [apply]
 

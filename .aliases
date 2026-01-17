@@ -1,9 +1,22 @@
 #Sublime Shortcut
 alias s="~/bin/subl"
 
-alias work="cd ~/Projects"
+alias work="cd ~/MyProjects && clear"
+alias swift="cd ~/MyProjects/iterable-swift-sdk && clear"
+alias swift2="cd ~/MyProjects/iterable-swift-sdk-2 && clear"
+alias test="cd ~/MyProjects/test-app && clear"
 
-alias context-drchatterjee="context --include-extension ts --include-extension tsx --exclude \"ui\" --exclude \".wrangler\" --exclude \".turbo\" --exclude \"*.sh\" --exclude \".*\" --exclude \"*.md\" --exclude \"*.js\" --exclude \"*.d.ts\" --exclude \"lib\"  --exclude \"rag-scripts\" --exclude horoscope-worker --exclude rag-worker"
+# Claude alias
+alias claude="clear && claude --dangerously-skip-permissions"
+alias workswift="cd ~/MyProjects/iterable-swift-sdk && clear && claude --dangerously-skip-permissions"
+alias workswift2="cd ~/MyProjects/iterable-swift-sdk-2 && clear && claude --dangerously-skip-permissions"
+alias worktest="cd ~/MyProjects/test-app && clear && claude --dangerously-skip-permissions"
+alias workhoroscope="cd ~/MyProjects/test-app/test-backend/apps/horoscope-worker && clear && claude --dangerously-skip-permissions"
+alias workbackend="cd ~/MyProjects/test-app/test-backend && clear && claude --dangerously-skip-permissions"
+alias workmobile="cd ~/MyProjects/test-app/test-mobile && clear && claude --dangerously-skip-permissions"
+alias workclaude="cd ~/.claude-config && clear && claude --dangerously-skip-permissions"
+alias workspec="cd ~/MyProjects/test-app/test-spec && clear && claude --dangerously-skip-permissions"
+alias workdeck="cd ~/MyProjects/test-app/test-deck && clear && claude --dangerously-skip-permissions"
 
 # Meta
 alias reload="source ~/.bash_profile"

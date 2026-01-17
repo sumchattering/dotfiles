@@ -17,3 +17,14 @@ fi
 
 # Created by `pipx` on 2024-07-23 14:52:22
 export PATH="$PATH:$HOME/.local/bin"
+
+# opencode
+export PATH=/Users/sumeru.chatterjee/.opencode/bin:$PATH
+
+# Disable glob expansion errors - allow commands with ? and * to pass through
+setopt nonomatch
+
+# Python alias
+alias python='python3'
+
+test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
