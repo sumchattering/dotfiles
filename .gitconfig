@@ -224,3 +224,6 @@ mergeoptions = --no-ff
 [init]
 
 defaultBranch = main
+[user]
+	name = Sumeru Chatterjee
+	email = sumeru.chatterjee@me.com
