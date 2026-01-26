@@ -1,6 +1,8 @@
 # Compiled Python files
 *.pyc
 
+.mcp.json
+.claude
 # Folder view configuration files
 .DS_Store
 Desktop.ini

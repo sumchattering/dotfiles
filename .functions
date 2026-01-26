@@ -340,3 +340,30 @@ mergedotfile() {
 	opendiff ~/"$1" $dotfiles/"$1" -merge $dotfiles/"$1"¬
 	set +x
 }
+
+# kill orphaned claude processes (detached from terminal)
+killall-orphan-claude() {
+	local current_pid=$$
+	local parent_pid=$PPID
+
+	# Find claude processes with no TTY (??) excluding current shell's ancestors
+	local pids=$(ps aux | grep -E '[c]laude' | awk '$7 == "??" {print $2}' | grep -v "^${current_pid}$" | grep -v "^${parent_pid}$")
+
+	if [ -z "$pids" ]; then
+		echo "No orphaned Claude processes found"
+		return 0
+	fi
+
+	local count=0
+	echo "Found orphaned Claude processes:"
+	for pid in $pids; do
+		local cwd=$(lsof -p "$pid" 2>/dev/null | awk '/cwd/ {print $NF}')
+		printf "  PID %s: %s\n" "$pid" "${cwd:-unknown}"
+		count=$((count + 1))
+	done
+
+	echo ""
+	echo "Killing $count processes..."
+	echo "$pids" | xargs kill 2>/dev/null
+	echo "Done."
+}
