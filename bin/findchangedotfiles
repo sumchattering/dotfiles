@@ -2,7 +2,8 @@
 
 # Find all dotfiles in the repo that differ from home directory
 
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Use current working directory as repo directory (where command is run from)
+REPO_DIR="$(pwd)"
 HOME_DIR="$HOME"
 SUMMARY_MODE=false
 SINGLE_FILE=""
