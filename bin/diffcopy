@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Collect all diffs (staged, unstaged, and untracked new files)
+# from the main repo and all submodules, then copy to clipboard.
+
+collect_all_diffs() {
+  local label=$1
+  local dir=$2
+  local output=""
+
+  # Staged + unstaged changes to tracked files
+  tracked=$(git -C "$dir" diff HEAD 2>/dev/null || true)
+
+  # Untracked new files
+  untracked=""
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    file_diff=$(git -C "$dir" diff --no-index /dev/null "$f" 2>/dev/null || true)
+    untracked+="${file_diff}
+"
+  done < <(git -C "$dir" ls-files --others --exclude-standard 2>/dev/null)
+
+  combined="${tracked}${untracked}"
+  # Strip blank lines
+  combined=$(printf '%s' "$combined" | sed '/^$/d')
+
+  if [[ -n "$combined" ]]; then
+    printf '=== %s ===\n%s\n\n' "$label" "$combined"
+  fi
+}
+
+diff_output=""
+
+# Main repo
+diff_output+=$(collect_all_diffs "Main Repo" ".")
+
+# Submodules
+while IFS= read -r sub; do
+  [[ -z "$sub" ]] && continue
+  diff_output+=$(collect_all_diffs "Submodule: ${sub}" "$sub")
+done < <(git submodule --quiet foreach --recursive 'echo $sm_path' 2>/dev/null)
+
+if [[ -z "$diff_output" ]]; then
+  echo "No diffs found."
+  exit 0
+fi
+
+if command -v pbcopy &>/dev/null; then
+  printf '%s' "$diff_output" | pbcopy
+elif command -v xclip &>/dev/null; then
+  printf '%s' "$diff_output" | xclip -selection clipboard
+elif command -v xsel &>/dev/null; then
+  printf '%s' "$diff_output" | xsel --clipboard --input
+else
+  echo "No clipboard utility found." >&2
+  exit 1
+fi
+
+lines=$(printf '%s' "$diff_output" | wc -l | tr -d ' ')
+echo "Copied diff to clipboard (${lines} lines)."

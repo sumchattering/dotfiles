@@ -32,13 +32,14 @@ setopt nonomatch
 # Python alias
 alias python='python3'
 
-test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
-
 # Powerlevel10k theme
 source ~/powerlevel10k/powerlevel10k.zsh-theme
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+# iTerm2 shell integration (must be AFTER Powerlevel10k to preserve working directory reporting)
+test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
 
 # Added by Antigravity
 export PATH="/Users/sumeru.chatterjee/.antigravity/antigravity/bin:$PATH"
