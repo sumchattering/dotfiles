@@ -18,3 +18,16 @@ fi
 # Created by `pipx` on 2024-07-23 14:52:22
 export PATH="$PATH:$HOME/.local/bin"
 
+
+
+
+
+
+
+
+
+
+# >>> claude-config >>>
+# Managed by claude-config bootstrap - do not edit manually
+[ -f ~/.claude-shell-config.sh ] && source ~/.claude-shell-config.sh
+# <<< claude-config <<<

@@ -43,3 +43,16 @@ test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell
 
 # Added by Antigravity
 export PATH="/Users/sumeru.chatterjee/.antigravity/antigravity/bin:$PATH"
+
+
+
+
+
+
+
+
+
+# >>> claude-config >>>
+# Managed by claude-config bootstrap - do not edit manually
+[ -f ~/.claude-shell-config.sh ] && source ~/.claude-shell-config.sh
+# <<< claude-config <<<

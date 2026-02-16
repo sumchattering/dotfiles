@@ -1,0 +1,148 @@
+#!/bin/bash
+#
+# git-superdiff: Like git diff, but also diffs inside submodules.
+#
+# Usage:
+#   git superdiff <commit_a>..<commit_b> [git-diff options]
+#   git superdiff <commit_a>...<commit_b> [git-diff options]
+#   git superdiff <commit> [git-diff options]   (diffs commit against HEAD)
+#
+# Examples:
+#   git superdiff HEAD..abc1234
+#   git superdiff main..feature/branch --stat
+#   git superdiff HEAD~5..HEAD
+
+set -euo pipefail
+
+# --- Color helpers (respect git color settings) ---
+use_color() {
+    local color_setting
+    color_setting=$(git config --get color.ui 2>/dev/null || echo "auto")
+    case "$color_setting" in
+        always|true) return 0 ;;
+        never|false) return 1 ;;
+        *)  # auto
+            [ -t 1 ] && return 0 || return 1
+            ;;
+    esac
+}
+
+if use_color; then
+    BOLD='\033[1m'
+    CYAN='\033[36m'
+    YELLOW='\033[33m'
+    DIM='\033[2m'
+    RESET='\033[0m'
+else
+    BOLD='' CYAN='' YELLOW='' DIM='' RESET=''
+fi
+
+# --- Parse arguments ---
+if [[ $# -lt 1 ]]; then
+    echo "Usage: git superdiff <commit_a>..<commit_b> [git-diff options]"
+    echo "       git superdiff <commit_a>...<commit_b> [git-diff options]"
+    echo "       git superdiff <commit> [git-diff options]"
+    exit 1
+fi
+
+RANGE="$1"
+shift
+EXTRA_ARGS=("$@")
+
+# Parse range into two refs and separator
+if [[ "$RANGE" == *"..."* ]]; then
+    COMMIT_A="${RANGE%%...*}"
+    COMMIT_B="${RANGE#*...}"
+    SEP="..."
+elif [[ "$RANGE" == *".."* ]]; then
+    COMMIT_A="${RANGE%%..*}"
+    COMMIT_B="${RANGE#*..}"
+    SEP=".."
+else
+    COMMIT_A="$RANGE"
+    COMMIT_B="HEAD"
+    SEP=".."
+fi
+
+[[ -z "$COMMIT_A" ]] && COMMIT_A="HEAD"
+[[ -z "$COMMIT_B" ]] && COMMIT_B="HEAD"
+
+# Resolve to full SHAs (validates the refs exist)
+COMMIT_A_SHA=$(git rev-parse "$COMMIT_A" 2>/dev/null) || {
+    echo "Error: cannot resolve '$COMMIT_A'" >&2; exit 1
+}
+COMMIT_B_SHA=$(git rev-parse "$COMMIT_B" 2>/dev/null) || {
+    echo "Error: cannot resolve '$COMMIT_B'" >&2; exit 1
+}
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+
+# --- Parent repo diff ---
+echo -e "${BOLD}${CYAN}══════════════════════════════════════════════════════════${RESET}"
+echo -e "${BOLD}${CYAN}  Parent Repository${RESET}"
+echo -e "${BOLD}${CYAN}══════════════════════════════════════════════════════════${RESET}"
+echo ""
+git diff "${COMMIT_A_SHA}${SEP}${COMMIT_B_SHA}" "${EXTRA_ARGS[@]:+${EXTRA_ARGS[@]}}" -- . ':(exclude,attr:builtin_objectmode=160000)'
+echo ""
+
+# --- Submodule diffs ---
+# Read submodule paths from .gitmodules
+if [[ ! -f "$REPO_ROOT/.gitmodules" ]]; then
+    exit 0
+fi
+
+git config --file "$REPO_ROOT/.gitmodules" --get-regexp '^submodule\..*\.path$' |
+while read -r _key path; do
+    # Get the submodule commit pinned at each end of the range
+    SUB_A=$(git ls-tree "$COMMIT_A_SHA" -- "$path" 2>/dev/null | awk '{print $3}')
+    SUB_B=$(git ls-tree "$COMMIT_B_SHA" -- "$path" 2>/dev/null | awk '{print $3}')
+
+    # Skip if both are empty (submodule didn't exist at either ref)
+    [[ -z "$SUB_A" && -z "$SUB_B" ]] && continue
+
+    # Skip if no change
+    [[ "$SUB_A" == "$SUB_B" ]] && continue
+
+    echo -e "${BOLD}${YELLOW}══════════════════════════════════════════════════════════${RESET}"
+    echo -e "${BOLD}${YELLOW}  Submodule: ${path}${RESET}"
+    echo -e "${DIM}  ${SUB_A:-<new>}${SEP}${SUB_B:-<removed>}${RESET}"
+    echo -e "${BOLD}${YELLOW}══════════════════════════════════════════════════════════${RESET}"
+    echo ""
+
+    if [[ ! -d "$REPO_ROOT/$path/.git" && ! -f "$REPO_ROOT/$path/.git" ]]; then
+        echo "  (submodule not initialized at $path — run 'git submodule update --init $path')"
+        echo ""
+        continue
+    fi
+
+    if [[ -z "$SUB_A" ]]; then
+        echo "  (new submodule, showing recent commits)"
+        git -C "$REPO_ROOT/$path" log --oneline -10 "$SUB_B" 2>/dev/null || true
+    elif [[ -z "$SUB_B" ]]; then
+        echo "  (submodule removed)"
+    else
+        # Check that both commits exist locally
+        if ! git -C "$REPO_ROOT/$path" cat-file -e "$SUB_A" 2>/dev/null; then
+            echo "  (commit $SUB_A not found locally — try 'git -C $path fetch')"
+            echo ""
+            continue
+        fi
+        if ! git -C "$REPO_ROOT/$path" cat-file -e "$SUB_B" 2>/dev/null; then
+            echo "  (commit $SUB_B not found locally — try 'git -C $path fetch')"
+            echo ""
+            continue
+        fi
+
+        # Show commit log between the two submodule refs
+        COMMITS=$(git -C "$REPO_ROOT/$path" log --oneline "${SUB_A}${SEP}${SUB_B}" 2>/dev/null || true)
+        if [[ -n "$COMMITS" ]]; then
+            echo -e "${DIM}  Commits:${RESET}"
+            echo "$COMMITS" | sed 's/^/    /'
+            echo ""
+        fi
+
+        # Show the actual diff
+        git -C "$REPO_ROOT/$path" diff "${SUB_A}${SEP}${SUB_B}" "${EXTRA_ARGS[@]:+${EXTRA_ARGS[@]}}" || true
+    fi
+    echo ""
+done

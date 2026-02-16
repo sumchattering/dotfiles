@@ -1,0 +1,184 @@
+#!/bin/bash
+# claudeusage - Claude Code usage with progress bars (like /usage)
+# Usage: claudeusage            (quick view)
+#        claudeusage --verbose   (add detailed token tables)
+
+set -euo pipefail
+
+VERBOSE=false
+INTERVAL=60
+
+for arg in "$@"; do
+    case "$arg" in
+        -v|--verbose) VERBOSE=true ;;
+        -h|--help) echo "Usage: claudeusage [-v|--verbose]"; exit 0 ;;
+    esac
+done
+
+# ── Colors ──────────────────────────────────────────────────────
+BOLD='\033[1m'
+DIM='\033[2m'
+RST='\033[0m'
+OLIVE='\033[38;5;142m'
+ORANGE='\033[38;5;178m'
+RED='\033[38;5;167m'
+
+# ── Get OAuth token from macOS Keychain ─────────────────────────
+get_token() {
+    /usr/bin/security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null \
+        | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null
+}
+
+# ── Fetch usage from Anthropic API ──────────────────────────────
+fetch_usage() {
+    local token="$1"
+    curl -s --max-time 5 "https://api.anthropic.com/api/oauth/usage" \
+        -H "Authorization: Bearer $token" \
+        -H "anthropic-beta: oauth-2025-04-20" \
+        -H "Accept: application/json"
+}
+
+# ── Format reset time ───────────────────────────────────────────
+fmt_reset() {
+    local iso="$1"
+    [[ -z "$iso" || "$iso" == "null" ]] && return
+    # Extract datetime part before the + timezone
+    local dt="${iso%%+*}"
+    dt="${dt%%.*}"
+    local tz_part="${iso#*+}"
+    # Parse and format
+    local reset_epoch
+    reset_epoch=$(date -jf "%Y-%m-%dT%H:%M:%S" "$dt" +%s 2>/dev/null) || return
+    local now_epoch; now_epoch=$(date +%s)
+    local diff=$(( reset_epoch - now_epoch ))
+
+    if [[ $diff -lt 86400 ]]; then
+        # Less than a day - show time like "8pm"
+        local t
+        t=$(date -jf "%Y-%m-%dT%H:%M:%S" "$dt" '+%-l%p' 2>/dev/null)
+        echo "${t}" | awk '{print tolower($0)}'
+    else
+        # More than a day - show date like "Feb 19 at 5:59am"
+        local d h
+        d=$(date -jf "%Y-%m-%dT%H:%M:%S" "$dt" '+%b %-d' 2>/dev/null)
+        h=$(date -jf "%Y-%m-%dT%H:%M:%S" "$dt" '+%-l:%M%p' 2>/dev/null | awk '{print tolower($0)}')
+        echo "${d} at ${h}"
+    fi
+}
+
+# ── Progress bar ────────────────────────────────────────────────
+bar() {
+    local pct=${1%.*}  # truncate decimal
+    local label="$2"
+    local sub="$3"
+    local width=40
+    [[ $pct -lt 0 ]] && pct=0
+    [[ $pct -gt 100 ]] && pct=100
+    local filled=$(( pct * width / 100 ))
+    local empty=$(( width - filled ))
+
+    local color="$OLIVE"
+    [[ $pct -ge 50 ]] && color="$ORANGE"
+    [[ $pct -ge 80 ]] && color="$RED"
+
+    echo -e "${BOLD}${label}${RST}"
+    printf "${color}"
+    [[ $filled -gt 0 ]] && printf '%0.s█' $(seq 1 $filled)
+    printf "${DIM}"
+    [[ $empty -gt 0 ]] && printf '%0.s░' $(seq 1 $empty)
+    printf "${RST}  %d%% used\n" "$pct"
+    echo -e "${DIM}${sub}${RST}"
+    echo ""
+}
+
+# ── Render ──────────────────────────────────────────────────────
+render() {
+    local token
+    token=$(get_token)
+    if [[ -z "$token" ]]; then
+        echo "Error: No OAuth credentials found. Log in to Claude Code first."
+        return 1
+    fi
+
+    local usage
+    usage=$(fetch_usage "$token")
+    if [[ -z "$usage" ]] || ! echo "$usage" | jq -e '.five_hour' &>/dev/null; then
+        echo "Error: Could not fetch usage data."
+        return 1
+    fi
+
+    # Parse all fields in one jq call
+    eval "$(echo "$usage" | jq -r '
+        "five_pct=\(.five_hour.utilization // 0)",
+        "five_reset=\(.five_hour.resets_at // "")",
+        "seven_pct=\(.seven_day.utilization // 0)",
+        "seven_reset=\(.seven_day.resets_at // "")",
+        "sonnet_pct=\(.seven_day_sonnet.utilization // "")",
+        "sonnet_reset=\(.seven_day_sonnet.resets_at // "")",
+        "extra_enabled=\(.extra_usage.is_enabled // false)",
+        "extra_pct=\(.extra_usage.utilization // 0)",
+        "extra_used=\(.extra_usage.used_credits // 0)",
+        "extra_limit=\(.extra_usage.monthly_limit // 0)"
+    ')"
+
+    local tz
+    tz=$(date +%Z 2>/dev/null || echo "")
+
+    clear
+    echo ""
+
+    # Current session
+    bar "${five_pct%.*}" "Current session" "Resets $(fmt_reset "$five_reset") (${tz})"
+
+    # Current week (all models)
+    bar "${seven_pct%.*}" "Current week (all models)" "Resets $(fmt_reset "$seven_reset") (${tz})"
+
+    # Current week (Sonnet only)
+    if [[ -n "$sonnet_pct" && "$sonnet_pct" != "null" ]]; then
+        bar "${sonnet_pct%.*}" "Current week (Sonnet only)" "Resets $(fmt_reset "$sonnet_reset") (${tz})"
+    fi
+
+    # Extra usage
+    if [[ "$extra_enabled" == "true" ]]; then
+        local used_dollars limit_dollars next_month
+        used_dollars=$(printf '%.2f' "$(echo "$extra_used / 100" | bc -l)")
+        limit_dollars=$(printf '%.2f' "$(echo "$extra_limit / 100" | bc -l)")
+        next_month=$(date -v+1m -v1d '+%b %-d' 2>/dev/null || date -d 'next month' '+%b %-d' 2>/dev/null || echo "next month")
+        bar "${extra_pct%.*}" "Extra usage" "\$${used_dollars} / \$${limit_dollars} spent · Resets ${next_month} (${tz})"
+    fi
+
+    # Verbose: detailed tables
+    if [[ "$VERBOSE" == true ]]; then
+        echo -e "${DIM}────────────────────────────────────────────${RST}"
+        echo ""
+        ccusage blocks --active --offline 2>/dev/null \
+            | sed '/^\[ccusage\]/d' \
+            | sed '/╭/,/╰/d' \
+            | sed '/^[[:space:]]*$/d'
+        echo ""
+        echo -e "${DIM}────────────────────────────────────────────${RST}"
+        echo ""
+        ccusage daily --since "$(date +%Y%m%d)" --breakdown --offline 2>/dev/null \
+            | sed '/^\[ccusage\]/d' \
+            | sed '/╭/,/╰/d' \
+            | sed '/^[[:space:]]*$/d'
+    fi
+
+}
+
+# ── Countdown timer (updates last line in-place) ────────────────
+countdown() {
+    local i
+    for (( i=INTERVAL; i>0; i-- )); do
+        printf "\r${DIM}Refreshing in %ds · Ctrl+C to exit${RST}\033[K" "$i"
+        sleep 1
+    done
+}
+
+# ── Main loop ───────────────────────────────────────────────────
+trap 'printf "\033[0m\n"; exit 0' INT
+
+while true; do
+    render
+    countdown
+done
