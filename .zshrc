@@ -44,6 +44,9 @@ test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell
 # Added by Antigravity
 export PATH="/Users/sumeru.chatterjee/.antigravity/antigravity/bin:$PATH"
 
+# Dotfiles bin
+export PATH="$HOME/dotfiles/bin:$PATH"
+
 
 
 
