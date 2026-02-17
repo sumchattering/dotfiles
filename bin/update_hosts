@@ -39,6 +39,10 @@ grep -h '^127\.0\.0\.1\|^0\.0\.0\.0' "$PERSONAL_HOSTS" "$TMP_DIR/steven_black.tx
     | sort -t$'\t' -k2 -u \
     > "$TMP_DIR/block_entries.txt"
 
+# Add IPv6 blocking (::1) for every blocked domain so Chrome can't fall back to IPv6
+awk -F'\t' '{print "::1\t" $2}' "$TMP_DIR/block_entries.txt" > "$TMP_DIR/ipv6_entries.txt"
+cat "$TMP_DIR/ipv6_entries.txt" >> "$TMP_DIR/block_entries.txt"
+
 # Build the final hosts file
 cat > "$TMP_DIR/hosts_merged" << 'HEADER'
 ##
@@ -76,8 +80,11 @@ ask_site() {
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo "  -> Blocking $name"
         for domain in $domains; do
-            if ! grep -q "	$domain$" "$TMP_DIR/hosts_filtered"; then
+            if ! grep -q "^127\.0\.0\.1	$domain$" "$TMP_DIR/hosts_filtered"; then
                 echo "127.0.0.1	$domain" >> "$TMP_DIR/hosts_filtered"
+            fi
+            if ! grep -q "^::1	$domain$" "$TMP_DIR/hosts_filtered"; then
+                echo "::1	$domain" >> "$TMP_DIR/hosts_filtered"
             fi
         done
     else
