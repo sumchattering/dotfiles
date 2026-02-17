@@ -1,0 +1,111 @@
+#!/bin/bash
+#
+# update_hosts - Fetch hosts blocklist from private GitHub repo and
+# Steven Black's porn-blocking list, merge them, deduplicate, and apply.
+# Assumes SSH access to GitHub is configured.
+#
+
+set -e
+
+REPO="git@github.com:sumchattering/sumeru_hosts.git"
+STEVEN_BLACK_URL="https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/porn/hosts"
+TMP_DIR=$(mktemp -d)
+
+cleanup() { rm -rf "$TMP_DIR"; }
+trap cleanup EXIT
+
+# Fetch personal hosts list
+echo "Cloning personal hosts repo..."
+git clone --depth 1 "$REPO" "$TMP_DIR/repo"
+
+PERSONAL_HOSTS="$TMP_DIR/repo/hosts"
+
+if [ ! -f "$PERSONAL_HOSTS" ]; then
+    echo "Error: hosts file not found in repo."
+    exit 1
+fi
+
+# Fetch Steven Black's porn-blocking list
+echo "Downloading Steven Black's porn-blocking list..."
+curl -sL "$STEVEN_BLACK_URL" -o "$TMP_DIR/steven_black.txt"
+
+# Merge: extract blocking entries from both files, normalize, and deduplicate
+echo "Merging and deduplicating..."
+
+# Extract only the 127.0.0.1 and 0.0.0.0 lines (actual block entries) from both files
+grep -h '^127\.0\.0\.1\|^0\.0\.0\.0' "$PERSONAL_HOSTS" "$TMP_DIR/steven_black.txt" \
+    | sed 's/0\.0\.0\.0/127.0.0.1/g' \
+    | awk '{print $1 "\t" $2}' \
+    | sort -t$'\t' -k2 -u \
+    > "$TMP_DIR/block_entries.txt"
+
+# Build the final hosts file
+cat > "$TMP_DIR/hosts_merged" << 'HEADER'
+##
+# Host Database
+#
+# localhost is used to configure the loopback interface
+# when the system is booting.  Do not change this entry.
+##
+127.0.0.1	localhost
+255.255.255.255	broadcasthost
+::1             localhost
+
+# Force Google SafeSearch
+216.239.38.120	www.google.com
+
+HEADER
+
+cat "$TMP_DIR/block_entries.txt" >> "$TMP_DIR/hosts_merged"
+
+# Remove localhost duplicates from the block entries section
+grep -v '^127\.0\.0\.1	localhost$' "$TMP_DIR/hosts_merged" > "$TMP_DIR/hosts_tmp" || true
+# Re-add the header (which has localhost)
+head -12 "$TMP_DIR/hosts_merged" > "$TMP_DIR/hosts_final"
+tail -n +13 "$TMP_DIR/hosts_tmp" >> "$TMP_DIR/hosts_final"
+
+cp "$TMP_DIR/hosts_final" "$TMP_DIR/hosts_filtered"
+
+# Ask about specific sites — ensure they're added or removed regardless of source lists
+ask_site() {
+    local name="$1"
+    shift
+    local domains="$@"
+    read -p "Would you like to block $name? (y/n) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo "  -> Blocking $name"
+        for domain in $domains; do
+            if ! grep -q "	$domain$" "$TMP_DIR/hosts_filtered"; then
+                echo "127.0.0.1	$domain" >> "$TMP_DIR/hosts_filtered"
+            fi
+        done
+    else
+        echo "  -> Keeping $name unblocked"
+        for domain in $domains; do
+            grep -v "	$domain$" "$TMP_DIR/hosts_filtered" > "$TMP_DIR/hosts_tmp" || true
+            mv "$TMP_DIR/hosts_tmp" "$TMP_DIR/hosts_filtered"
+        done
+    fi
+}
+
+echo ""
+ask_site "LinkedIn" linkedin.com www.linkedin.com
+ask_site "Twitter/X" twitter.com www.twitter.com x.com www.x.com mobile.twitter.com
+ask_site "Reddit" reddit.com www.reddit.com old.reddit.com new.reddit.com
+echo ""
+
+TOTAL=$(wc -l < "$TMP_DIR/hosts_filtered" | tr -d ' ')
+echo "Total entries: $TOTAL"
+
+echo "Backing up current /etc/hosts to /etc/hosts.backup..."
+sudo cp /etc/hosts /etc/hosts.backup
+
+echo "Applying new hosts file..."
+sudo cp "$TMP_DIR/hosts_filtered" /etc/hosts
+
+echo "Flushing DNS cache..."
+sudo dscacheutil -flushcache
+sudo killall -HUP mDNSResponder
+
+echo "Done! Hosts file updated with $TOTAL entries."
