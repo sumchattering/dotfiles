@@ -1,14 +1,15 @@
 #!/bin/bash
 #
-# update_hosts - Fetch hosts blocklist from private GitHub repo and
-# Steven Black's porn-blocking list, merge them, deduplicate, and apply.
+# update_hosts - Fetch hosts blocklist from private GitHub repo and apply.
 # Assumes SSH access to GitHub is configured.
+#
+# Uses 0.0.0.0 (instant fail) instead of 127.0.0.1 for faster blocking.
+# Blocks both IPv4 (0.0.0.0) and IPv6 (::) per domain.
 #
 
 set -e
 
 REPO="git@github.com:sumchattering/sumeru_hosts.git"
-STEVEN_BLACK_URL="https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/porn/hosts"
 TMP_DIR=$(mktemp -d)
 
 cleanup() { rm -rf "$TMP_DIR"; }
@@ -25,22 +26,17 @@ if [ ! -f "$PERSONAL_HOSTS" ]; then
     exit 1
 fi
 
-# Fetch Steven Black's porn-blocking list
-echo "Downloading Steven Black's porn-blocking list..."
-curl -sL "$STEVEN_BLACK_URL" -o "$TMP_DIR/steven_black.txt"
+# Normalize and deduplicate
+echo "Processing and deduplicating..."
 
-# Merge: extract blocking entries from both files, normalize, and deduplicate
-echo "Merging and deduplicating..."
-
-# Extract only the 127.0.0.1 and 0.0.0.0 lines (actual block entries) from both files
-grep -h '^127\.0\.0\.1\|^0\.0\.0\.0' "$PERSONAL_HOSTS" "$TMP_DIR/steven_black.txt" \
-    | sed 's/0\.0\.0\.0/127.0.0.1/g' \
+grep -h '^127\.0\.0\.1\|^0\.0\.0\.0' "$PERSONAL_HOSTS" \
+    | sed 's/127\.0\.0\.1/0.0.0.0/g' \
     | awk '{print $1 "\t" $2}' \
     | sort -t$'\t' -k2 -u \
     > "$TMP_DIR/block_entries.txt"
 
-# Add IPv6 blocking (::1) for every blocked domain so Chrome can't fall back to IPv6
-awk -F'\t' '{print "::1\t" $2}' "$TMP_DIR/block_entries.txt" > "$TMP_DIR/ipv6_entries.txt"
+# Add IPv6 blocking for every blocked domain
+awk -F'\t' '{print "::\t" $2}' "$TMP_DIR/block_entries.txt" > "$TMP_DIR/ipv6_entries.txt"
 cat "$TMP_DIR/ipv6_entries.txt" >> "$TMP_DIR/block_entries.txt"
 
 # Build the final hosts file
@@ -63,7 +59,7 @@ HEADER
 cat "$TMP_DIR/block_entries.txt" >> "$TMP_DIR/hosts_merged"
 
 # Remove localhost duplicates from the block entries section
-grep -v '^127\.0\.0\.1	localhost$' "$TMP_DIR/hosts_merged" > "$TMP_DIR/hosts_tmp" || true
+grep -v '^0\.0\.0\.0	localhost$' "$TMP_DIR/hosts_merged" > "$TMP_DIR/hosts_tmp" || true
 # Re-add the header (which has localhost)
 head -12 "$TMP_DIR/hosts_merged" > "$TMP_DIR/hosts_final"
 tail -n +13 "$TMP_DIR/hosts_tmp" >> "$TMP_DIR/hosts_final"
@@ -80,11 +76,11 @@ ask_site() {
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo "  -> Blocking $name"
         for domain in $domains; do
-            if ! grep -q "^127\.0\.0\.1	$domain$" "$TMP_DIR/hosts_filtered"; then
-                echo "127.0.0.1	$domain" >> "$TMP_DIR/hosts_filtered"
+            if ! grep -q "^0\.0\.0\.0	$domain$" "$TMP_DIR/hosts_filtered"; then
+                echo "0.0.0.0	$domain" >> "$TMP_DIR/hosts_filtered"
             fi
-            if ! grep -q "^::1	$domain$" "$TMP_DIR/hosts_filtered"; then
-                echo "::1	$domain" >> "$TMP_DIR/hosts_filtered"
+            if ! grep -q "^::	$domain$" "$TMP_DIR/hosts_filtered"; then
+                echo "::	$domain" >> "$TMP_DIR/hosts_filtered"
             fi
         done
     else
@@ -100,6 +96,9 @@ echo ""
 ask_site "LinkedIn" linkedin.com www.linkedin.com
 ask_site "Twitter/X" twitter.com www.twitter.com x.com www.x.com mobile.twitter.com
 ask_site "Reddit" reddit.com www.reddit.com old.reddit.com new.reddit.com
+ask_site "YouTube" youtube.com www.youtube.com m.youtube.com
+ask_site "Facebook" facebook.com www.facebook.com
+ask_site "Instagram" instagram.com www.instagram.com
 echo ""
 
 TOTAL=$(wc -l < "$TMP_DIR/hosts_filtered" | tr -d ' ')

@@ -168,10 +168,12 @@ render() {
 
 # ── Countdown timer (updates last line in-place) ────────────────
 countdown() {
-    local i
+    local i key
     for (( i=INTERVAL; i>0; i-- )); do
-        printf "\r${DIM}Refreshing in %ds · Ctrl+C to exit${RST}\033[K" "$i"
-        sleep 1
+        printf "\r${DIM}Refreshing in %ds · R to refresh · Ctrl+C to exit${RST}\033[K" "$i"
+        if read -rsn1 -t1 key 2>/dev/null; then
+            [[ "$key" == "r" || "$key" == "R" ]] && return
+        fi
     done
 }
 
