@@ -71,6 +71,8 @@ function doIt() {
 	fi
 
 	echo "Done!"
+
+
 	source ~/.bash_profile
 }
 
