@@ -1,0 +1,95 @@
+#!/bin/bash
+
+TAILSCALE_IP=$(tailscale ip -4 2>/dev/null)
+VERBOSE=false
+[[ "$1" == "--verbose" || "$1" == "-v" ]] && VERBOSE=true
+
+echo "=== Remote System Status ==="
+echo ""
+
+# Power
+echo "--- Power ---"
+if pmset -g batt | grep -q "AC Power"; then
+    echo "External Power: CONNECTED"
+else
+    echo "External Power: NOT CONNECTED"
+fi
+pmset -g batt | tail -1
+
+echo ""
+
+# Tailscale
+echo "--- Tailscale ---"
+if tailscale status &>/dev/null; then
+    echo "Tailscale: CONNECTED ($TAILSCALE_IP)"
+else
+    echo "Tailscale: DOWN"
+fi
+
+echo ""
+
+# Caffeinate
+echo "--- Caffeinate ---"
+if pgrep -f "caffeinate -s" >/dev/null; then
+    echo "caffeinate -s: RUNNING"
+else
+    echo "caffeinate -s: NOT RUNNING"
+fi
+
+echo ""
+
+# SSH
+echo "--- SSH (port 22) ---"
+if nc -z "$TAILSCALE_IP" 22 -w 2 2>/dev/null; then
+    echo "Tailscale: OPEN"
+else
+    echo "Tailscale: CLOSED"
+fi
+if $VERBOSE; then
+    if nc -z 127.0.0.1 22 -w 2 2>/dev/null; then
+        echo "localhost: OPEN (exposed!)"
+    else
+        echo "localhost: BLOCKED"
+    fi
+fi
+
+echo ""
+
+# VNC
+echo "--- VNC (port 5900) ---"
+if nc -z "$TAILSCALE_IP" 5900 -w 2 2>/dev/null; then
+    echo "Tailscale: OPEN"
+else
+    echo "Tailscale: CLOSED"
+fi
+if $VERBOSE; then
+    if nc -z 127.0.0.1 5900 -w 2 2>/dev/null; then
+        echo "localhost: OPEN (exposed!)"
+    else
+        echo "localhost: BLOCKED"
+    fi
+fi
+
+echo ""
+
+if $VERBOSE; then
+    # Firewall
+    echo "--- Firewall (pf) ---"
+    if nc -z 127.0.0.1 22 -w 2 2>/dev/null || nc -z 127.0.0.1 5900 -w 2 2>/dev/null; then
+        echo "pf: NOT BLOCKING (rules may not be loaded)"
+    else
+        echo "pf: ACTIVE (localhost blocked)"
+    fi
+
+    echo ""
+fi
+
+# Display
+echo "--- Display ---"
+if ioreg -r -d 1 -k IODisplayBrightness 2>/dev/null | grep -q '"IODisplayBrightness" = 0'; then
+    echo "Display: OFF"
+elif pmset -g powerstate IODisplayWrangler 2>/dev/null | tail -1 | grep -q "4"; then
+    echo "Display: ON"
+else
+    echo "Display: OFF"
+fi
