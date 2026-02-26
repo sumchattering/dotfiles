@@ -1,0 +1,68 @@
+#!/bin/zsh
+#
+# clauderesume - Resume a Claude Code conversation by session ID
+# Usage: clauderesume <conversation_id>
+#
+# Finds the project directory for the conversation and resumes it there.
+#
+
+if [[ -z "$1" ]]; then
+  echo "Usage: clauderesume <conversation_id>"
+  exit 1
+fi
+
+SESSION_ID="$1"
+PROJECTS_DIR="$HOME/.claude/projects"
+PROJECT_PATH=""
+
+# 1) Search sessions-index.json files
+for index_file in "$PROJECTS_DIR"/*/sessions-index.json(N); do
+  match=$(jq -r --arg sid "$SESSION_ID" '
+    .entries[] | select(.sessionId == $sid) | .projectPath
+  ' "$index_file" 2>/dev/null)
+
+  if [[ -n "$match" && "$match" != "null" ]]; then
+    PROJECT_PATH="$match"
+    break
+  fi
+done
+
+# 2) Fallback: find the .jsonl file and extract cwd
+if [[ -z "$PROJECT_PATH" ]]; then
+  for project_dir in "$PROJECTS_DIR"/*/; do
+    if [[ -f "${project_dir}${SESSION_ID}.jsonl" ]]; then
+      # cwd may not be on the first line (e.g. file-history-snapshot lines)
+      PROJECT_PATH=$(head -5 "${project_dir}${SESSION_ID}.jsonl" | while read -r line; do
+        result=$(echo "$line" | jq -r '.cwd // empty' 2>/dev/null)
+        if [[ -n "$result" ]]; then
+          echo "$result"
+          break
+        fi
+      done)
+      break
+    fi
+  done
+fi
+
+# 3) Fallback: search history.jsonl
+if [[ -z "$PROJECT_PATH" ]]; then
+  HISTORY_FILE="$HOME/.claude/history.jsonl"
+  if [[ -f "$HISTORY_FILE" ]]; then
+    PROJECT_PATH=$(grep "\"sessionId\":\"$SESSION_ID\"" "$HISTORY_FILE" | head -1 | jq -r '.project // empty' 2>/dev/null)
+  fi
+fi
+
+if [[ -z "$PROJECT_PATH" ]]; then
+  echo "Error: Could not find conversation with ID: $SESSION_ID"
+  exit 1
+fi
+
+if [[ ! -d "$PROJECT_PATH" ]]; then
+  echo "Warning: Project directory no longer exists: $PROJECT_PATH"
+  echo "Resuming from current directory instead."
+  claude --resume "$SESSION_ID"
+  exit $?
+fi
+
+echo "Resuming conversation in: $PROJECT_PATH"
+cd "$PROJECT_PATH" && claude --resume "$SESSION_ID"

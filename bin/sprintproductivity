@@ -1,0 +1,373 @@
+#!/bin/bash
+# sprintproductivity - Sprint productivity metrics with per-person breakdown
+# Usage: sprintproductivity              (show all sprints)
+#        sprintproductivity --sprints N  (show last N sprints)
+#        sprintproductivity --refresh    (force refresh cache)
+#        sprintproductivity --pdf        (export PDF to Desktop)
+
+set -eo pipefail
+
+CACHE_DIR="$HOME/.cache/sprintproductivity"
+CACHE_TTL=300
+NUM_SPRINTS=9
+BOARD_ID=1679
+
+# ── Parse args ───────────────────────────────────────────────────
+FORCE_REFRESH=false
+PDF_OUTPUT=false
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --refresh) FORCE_REFRESH=true; shift ;;
+        --sprints) NUM_SPRINTS="${2:-9}"; shift 2 ;;
+        --pdf) PDF_OUTPUT=true; shift ;;
+        -h|--help) echo "Usage: sprintproductivity [--sprints N] [--refresh] [--pdf]"; exit 0 ;;
+        *) shift ;;
+    esac
+done
+
+# ── Colors ───────────────────────────────────────────────────────
+BOLD='\033[1m' ; DIM='\033[2m' ; RST='\033[0m'
+GREEN='\033[38;5;114m' ; OLIVE='\033[38;5;142m'
+ORANGE='\033[38;5;178m' ; RED='\033[38;5;167m'
+CYAN='\033[38;5;116m' ; GRAY='\033[38;5;245m'
+WHITE='\033[38;5;255m'
+
+# ── Credentials ──────────────────────────────────────────────────
+load_creds() {
+    local f="$HOME/claude-config/jira-credentials.json"
+    [[ ! -f "$f" ]] && f="$HOME/.jira-mcp-credentials.json"
+    [[ ! -f "$f" ]] && { echo "Error: No Jira credentials" >&2; exit 1; }
+    JIRA_BASE_URL=$(jq -r '.JIRA_BASE_URL' "$f")
+    JIRA_EMAIL=$(jq -r '.JIRA_EMAIL' "$f")
+    JIRA_TOKEN=$(jq -r '.JIRA_API_TOKEN' "$f")
+}
+
+jira_api() {
+    curl -s --max-time 15 -u "$JIRA_EMAIL:$JIRA_TOKEN" "$JIRA_BASE_URL$1"
+}
+
+# ── Cache ────────────────────────────────────────────────────────
+get_cached() {
+    local file="$CACHE_DIR/$1.json"
+    mkdir -p "$CACHE_DIR"
+    if [[ "$FORCE_REFRESH" == "false" && -f "$file" ]]; then
+        local age=$(($(date +%s) - $(stat -f %m "$file" 2>/dev/null || stat -c %Y "$file" 2>/dev/null)))
+        [[ $age -lt $CACHE_TTL ]] && { cat "$file"; return 0; }
+    fi
+    return 1
+}
+
+set_cache() { mkdir -p "$CACHE_DIR"; echo "$2" > "$CACHE_DIR/$1.json"; }
+
+# ── Fetch helpers ────────────────────────────────────────────────
+fetch_sprints() {
+    local d; d=$(get_cached "sprints") && { echo "$d"; return; }
+    d=$(jira_api "/rest/agile/1.0/board/$BOARD_ID/sprint?state=closed,active")
+    set_cache "sprints" "$d"; echo "$d"
+}
+
+fetch_sprint_issues() {
+    local d; d=$(get_cached "sprint_${1}_v3") && { echo "$d"; return; }
+    d=$(jira_api "/rest/agile/1.0/sprint/$1/issue?maxResults=100&fields=customfield_10008,status,assignee,resolutiondate")
+    set_cache "sprint_${1}_v3" "$d"; echo "$d"
+}
+
+# ── Progress bar ─────────────────────────────────────────────────
+bar() {
+    local pct="${1%.*}"
+    local width="${2:-30}"
+    [[ -z "$pct" ]] && pct=0
+    [[ "$pct" -lt 0 ]] 2>/dev/null && pct=0
+    [[ "$pct" -gt 100 ]] 2>/dev/null && pct=100
+    local filled=$(( pct * width / 100 ))
+    local empty=$(( width - filled ))
+    local color="$RED"
+    [[ $pct -ge 50 ]] && color="$ORANGE"
+    [[ $pct -ge 75 ]] && color="$OLIVE"
+    [[ $pct -ge 90 ]] && color="$GREEN"
+    local filled_str="" empty_str=""
+    for ((i=0; i<filled; i++)); do filled_str+="█"; done
+    for ((i=0; i<empty; i++)); do empty_str+="░"; done
+    printf "${color}%s${DIM}%s${RST}" "$filled_str" "$empty_str"
+}
+
+# ── Per-person sprint metrics ────────────────────────────────────
+# Committed = issues in sprint list (Jira already includes carryover)
+# Done = resolved within sprint date window
+calc_sprint_metrics() {
+    local issues_json="$1" sprint_start="$2" sprint_end="$3"
+    echo "$issues_json" | jq -r --arg start "$sprint_start" --arg end "$sprint_end" '
+        (.issues // []) |
+        reduce .[] as $issue (
+            {};
+            ($issue.fields.customfield_10008 // 0) as $pts |
+            ($issue.fields.assignee.displayName // "Unassigned") as $name |
+            ($issue.fields.assignee.emailAddress // "unassigned") as $email |
+            ($issue.fields.resolutiondate // "") as $resolved |
+            ($resolved != "" and $resolved >= $start and $resolved <= $end) as $done_here |
+            .[$email] = (.[$email] // {name: $name, committed: 0, done: 0}) |
+            .[$email].committed += $pts |
+            (if $done_here then .[$email].done += $pts else . end)
+        )
+    '
+}
+
+fmt_date_range() {
+    local s e
+    s=$(date -jf "%Y-%m-%dT%H:%M:%S" "${1%%.*}" "+%b %-d" 2>/dev/null || echo "?")
+    e=$(date -jf "%Y-%m-%dT%H:%M:%S" "${2%%.*}" "+%b %-d" 2>/dev/null || echo "?")
+    echo "$s - $e"
+}
+
+# ── Main render ──────────────────────────────────────────────────
+render() {
+    load_creds
+
+    echo ""
+    printf "${BOLD}Sprint Productivity - SDK Team${RST}\n"
+    printf "${DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RST}\n\n"
+
+    local sprints_json sdk_sprints
+    sprints_json=$(fetch_sprints)
+    sdk_sprints=$(echo "$sprints_json" | jq -r --argjson board "$BOARD_ID" '
+        .values // [] |
+        map(select(.originBoardId == $board and (.name | test("SDK Sprint")))) |
+        sort_by(.name | capture("SDK Sprint #(?<n>[0-9]+)") | .n | tonumber) |
+        .[-'"$NUM_SPRINTS"':]
+    ')
+
+    printf "${DIM}Loading sprint data...${RST}\r"
+
+    local sprint_count=0
+    local sprint_rates="{}"
+
+    while IFS= read -r sprint; do
+        local sprint_id name state start_date end_date
+        sprint_id=$(echo "$sprint" | jq -r '.id')
+        name=$(echo "$sprint" | jq -r '.name')
+        state=$(echo "$sprint" | jq -r '.state')
+        start_date=$(echo "$sprint" | jq -r '.startDate // ""')
+        end_date=$(echo "$sprint" | jq -r '.endDate // ""')
+        [[ -z "$sprint_id" || "$sprint_id" == "null" ]] && continue
+        
+        # Skip active sprints entirely
+        [[ "$state" == "active" ]] && continue
+
+        local issues_json metrics
+        issues_json=$(fetch_sprint_issues "$sprint_id")
+        metrics=$(calc_sprint_metrics "$issues_json" "$start_date" "$end_date")
+        
+        # Accumulate per-person sprint completion rates (count if committed > 0)
+        sprint_rates=$(echo "$sprint_rates" "$metrics" | jq -s '
+            .[0] as $acc | .[1] | to_entries | reduce .[] as $e ($acc;
+                ($e.value.name) as $name |
+                ($e.key) as $email |
+                ($e.value.committed // 0) as $committed |
+                ($e.value.done // 0) as $done |
+                (if $committed > 0 then ($done * 100 / $committed | floor) else 0 end) as $pct |
+                .[$email] = (.[$email] // {name: $name, total_pct: 0, sprints: 0, pcts: []}) |
+                (if $committed > 0 then
+                    .[$email].total_pct += $pct |
+                    .[$email].sprints += 1 |
+                    .[$email].pcts += [$pct]
+                else . end)
+            )
+        ')
+
+        # Sprint header
+        local date_range=""
+        [[ -n "$start_date" && "$start_date" != "null" ]] && date_range=$(printf " ${DIM}(%s)${RST}" "$(fmt_date_range "$start_date" "$end_date")")
+        printf "${BOLD}%s${RST}" "$name"
+        printf "%b\n" "$date_range"
+
+        # Per-person table
+        echo "$metrics" | jq -r '
+            to_entries | sort_by(.value.committed) | reverse | .[].value |
+            "\(.name)|\(.committed)|\(.done)"
+        ' | while IFS='|' read -r pname committed done; do
+            local pct=0
+            if (( $(echo "$committed > 0" | bc -l) )); then
+                pct=$(echo "scale=0; $done * 100 / $committed" | bc)
+            fi
+
+            local is_me=""
+            [[ "$pname" == "Sumeru Chatterjee" ]] && is_me="true"
+
+            printf "  "
+            if [[ -n "$is_me" ]]; then
+                printf "${WHITE}%-20s${RST} " "$pname"
+            else
+                printf "${GRAY}%-20s${RST} " "$pname"
+            fi
+            bar "$pct" 30
+            printf "  %3d%%  " "$pct"
+
+            if [[ -n "$is_me" ]]; then
+                printf "${WHITE}%g/%g pts${RST}" "$done" "$committed"
+            else
+                printf "${GRAY}%g/%g pts${RST}" "$done" "$committed"
+            fi
+            printf "\n"
+        done
+        echo ""
+
+        ((sprint_count++)) || true
+    done < <(echo "$sdk_sprints" | jq -c '.[]')
+
+    # Overall summary
+    printf "${DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RST}\n"
+
+    local board_data
+    board_data=$(get_cached "board_all_v2") || {
+        board_data=$(jira_api "/rest/agile/1.0/board/$BOARD_ID/issue?maxResults=500&fields=customfield_10008,customfield_10007,status,assignee")
+        set_cache "board_all_v2" "$board_data"
+    }
+
+    # Calculate per-person totals (only issues in sprints count)
+    local overall_persons
+    overall_persons=$(echo "$board_data" | jq -r '
+        (.issues // []) |
+        reduce .[] as $issue (
+            {};
+            ($issue.fields.customfield_10008 // 0) as $pts |
+            ($issue.fields.assignee.displayName // "Unassigned") as $name |
+            ($issue.fields.assignee.emailAddress // "unassigned") as $email |
+            ($issue.fields.status.statusCategory.key // "") as $status |
+            (($issue.fields.customfield_10007 // []) | length > 0) as $in_sprint |
+            .[$email] = (.[$email] // {name: $name, committed: 0, done: 0, backlog: 0}) |
+            (if $in_sprint then
+                .[$email].committed += $pts |
+                (if $status == "done" then .[$email].done += $pts else . end)
+            else
+                .[$email].backlog += $pts
+            end)
+        )
+    ')
+
+    printf "\n${BOLD}Overall (%d sprints)${RST}\n\n" "$sprint_count"
+
+    echo "$overall_persons" | jq -r '
+        to_entries | sort_by(.value.done) | reverse | .[].value |
+        "\(.name)|\(.committed)|\(.done)|\(.backlog)"
+    ' | while IFS='|' read -r pname committed done backlog; do
+        local pct=0
+        if (( $(echo "$committed > 0" | bc -l) )); then
+            pct=$(echo "scale=0; $done * 100 / $committed" | bc)
+        fi
+
+        local is_me=""
+        [[ "$pname" == "Sumeru Chatterjee" ]] && is_me="true"
+
+        printf "  "
+        if [[ -n "$is_me" ]]; then
+            printf "${WHITE}${BOLD}%-20s${RST} " "$pname"
+        else
+            printf "${GRAY}%-20s${RST} " "$pname"
+        fi
+        bar "$pct" 30
+        printf "  %3d%%  " "$pct"
+
+        if [[ -n "$is_me" ]]; then
+            printf "${WHITE}${BOLD}%g/%g pts${RST}" "$done" "$committed"
+        else
+            printf "${GRAY}%g/%g pts${RST}" "$done" "$committed"
+        fi
+        
+        # Show points not in any sprint
+        if (( $(echo "$backlog > 0" | bc -l) )); then
+            printf "  ${DIM}(+%g not in sprints)${RST}" "$backlog"
+        fi
+        printf "\n"
+    done
+    
+    # Completion Rates section - average of per-sprint completion rates
+    printf "\n${DIM}───────────────────────────────────────────────────────────────────${RST}\n"
+    printf "${BOLD}Avg Completion Rate (per sprint)${RST}\n\n"
+    
+    # Calculate average completion rate per person from sprint_rates
+    echo "$sprint_rates" | jq -r '
+        to_entries |
+        map(select(.value.sprints > 0 and .value.name != "Unassigned")) |
+        sort_by(.value.total_pct / .value.sprints) | reverse |
+        .[].value |
+        "\(.name)|\(.total_pct)|\(.sprints)|\(.pcts | map(tostring) | join("+"))"
+    ' | while IFS='|' read -r pname total_pct sprint_count pcts_str; do
+        local avg_pct=0
+        if (( $(echo "$sprint_count > 0" | bc -l) )); then
+            avg_pct=$(echo "scale=0; $total_pct / $sprint_count" | bc)
+        fi
+
+        local is_me=""
+        [[ "$pname" == "Sumeru Chatterjee" ]] && is_me="true"
+
+        printf "  "
+        if [[ -n "$is_me" ]]; then
+            printf "${WHITE}${BOLD}%-20s${RST}  %3d%% ${DIM}= (%s)/%d${RST}\n" "$pname" "$avg_pct" "$pcts_str" "$sprint_count"
+        else
+            printf "${GRAY}%-20s${RST}  %3d%% ${DIM}= (%s)/%d${RST}\n" "$pname" "$avg_pct" "$pcts_str" "$sprint_count"
+        fi
+    done
+    
+    echo ""
+}
+
+if [[ "$PDF_OUTPUT" == "true" ]]; then
+    PDF_PATH="$HOME/Desktop/sprint-productivity-$(date +%Y%m%d).pdf"
+    TMP_HTML=$(mktemp /tmp/sprint-XXXXX.html)
+    
+    # Capture output and convert ANSI to HTML
+    render 2>&1 | awk '
+    BEGIN {
+        print "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>"
+        print "body { font-family: \"SF Mono\", Menlo, monospace; font-size: 11px; padding: 20px; background: #1a1a1a; color: #e0e0e0; }"
+        print "pre { white-space: pre-wrap; line-height: 1.4; }"
+        print ".bold { font-weight: bold; }"
+        print ".dim { opacity: 0.6; }"
+        print ".green { color: #87d787; }"
+        print ".olive { color: #afaf00; }"
+        print ".orange { color: #d7af5f; }"
+        print ".red { color: #d75f5f; }"
+        print ".cyan { color: #87d7d7; }"
+        print ".gray { color: #8a8a8a; }"
+        print ".white { color: #eeeeee; }"
+        print "</style></head><body><pre>"
+    }
+    {
+        gsub(/\033\[1m/, "<span class=\"bold\">")
+        gsub(/\033\[2m/, "<span class=\"dim\">")
+        gsub(/\033\[0m/, "</span>")
+        gsub(/\033\[38;5;114m/, "<span class=\"green\">")
+        gsub(/\033\[38;5;142m/, "<span class=\"olive\">")
+        gsub(/\033\[38;5;178m/, "<span class=\"orange\">")
+        gsub(/\033\[38;5;167m/, "<span class=\"red\">")
+        gsub(/\033\[38;5;116m/, "<span class=\"cyan\">")
+        gsub(/\033\[38;5;245m/, "<span class=\"gray\">")
+        gsub(/\033\[38;5;255m/, "<span class=\"white\">")
+        print
+    }
+    END {
+        print "</pre></body></html>"
+    }
+    ' > "$TMP_HTML"
+    
+    # Convert HTML to PDF using Chrome headless (most reliable on macOS)
+    if command -v /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome &>/dev/null; then
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+            --headless --disable-gpu --print-to-pdf="$PDF_PATH" \
+            --no-margins --print-to-pdf-no-header \
+            "file://$TMP_HTML" 2>/dev/null
+    elif command -v wkhtmltopdf &>/dev/null; then
+        wkhtmltopdf --quiet "$TMP_HTML" "$PDF_PATH"
+    else
+        # Fallback to HTML
+        cp "$TMP_HTML" "$HOME/Desktop/sprint-productivity-$(date +%Y%m%d).html"
+        echo "PDF conversion requires Chrome or wkhtmltopdf. HTML saved to Desktop."
+        rm -f "$TMP_HTML"
+        exit 0
+    fi
+    
+    rm -f "$TMP_HTML"
+    echo "PDF saved to: $PDF_PATH"
+else
+    render
+fi

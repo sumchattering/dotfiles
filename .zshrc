@@ -55,6 +55,9 @@ export PATH="$HOME/dotfiles/bin:$PATH"
 
 
 
+
+
+
 # >>> claude-config >>>
 # Managed by claude-config bootstrap - do not edit manually
 [ -f ~/.claude-shell-config.sh ] && source ~/.claude-shell-config.sh

@@ -1,0 +1,120 @@
+#!/bin/zsh
+#
+# claudesearch - Search Claude Code conversation history by keyword
+# Usage: claudesearch <searchterm>
+#
+
+if [[ -z "$1" ]]; then
+  echo "Usage: claudesearch <searchterm>"
+  exit 1
+fi
+
+SEARCH_TERM="$1"
+PROJECTS_DIR="$HOME/.claude/projects"
+HISTORY_FILE="$HOME/.claude/history.jsonl"
+
+typeset -A SEEN_SESSIONS
+
+echo ""
+echo "Searching for \"$SEARCH_TERM\"..."
+echo ""
+
+found=0
+
+# 1) Search sessions-index.json files (has summaries + firstPrompt)
+for index_file in "$PROJECTS_DIR"/*/sessions-index.json(N); do
+  while IFS=$'\t' read -r session_id summary project_path created modified msg_count first_prompt; do
+    [[ -z "$session_id" ]] && continue
+    [[ -n "${SEEN_SESSIONS[$session_id]}" ]] && continue
+    SEEN_SESSIONS[$session_id]=1
+    found=$((found + 1))
+
+    echo "[$found] $summary"
+    echo "    Session:  $session_id"
+    [[ -n "$project_path" ]] && echo "    Project:  $project_path"
+    [[ -n "$created" ]] && echo "    Created:  $created"
+    [[ -n "$modified" ]] && echo "    Modified: $modified"
+    [[ -n "$msg_count" ]] && echo "    Messages: $msg_count"
+    if [[ -n "$first_prompt" ]]; then
+      truncated="${first_prompt:0:120}"
+      [[ ${#first_prompt} -gt 120 ]] && truncated="${truncated}..."
+      echo "    Prompt:   $truncated"
+    fi
+    echo ""
+  done < <(jq -r --arg term "$SEARCH_TERM" '
+    .entries[] |
+    select(
+      (.summary // "" | test($term; "i")) or
+      (.firstPrompt // "" | test($term; "i"))
+    ) |
+    [.sessionId, .summary, .projectPath, .created, .modified, (.messageCount | tostring), .firstPrompt] |
+    join("\t")
+  ' "$index_file" 2>/dev/null)
+done
+
+# 2) Search conversation .jsonl files directly for the term in user messages
+for project_dir in "$PROJECTS_DIR"/*/; do
+  for conv_file in "$project_dir"*.jsonl(N); do
+    session_id="${conv_file:t:r}"
+    # Skip if already found
+    [[ -n "${SEEN_SESSIONS[$session_id]}" ]] && continue
+
+    # Check if any user message contains the search term
+    if grep -qi "$SEARCH_TERM" "$conv_file" 2>/dev/null; then
+      SEEN_SESSIONS[$session_id]=1
+
+      # Extract metadata from first line
+      metadata=$(head -1 "$conv_file" | jq -r '[.cwd // "", .timestamp // ""] | join("\t")' 2>/dev/null)
+      IFS=$'\t' read -r cwd timestamp <<< "$metadata"
+
+      # Get the first user message as the prompt
+      first_prompt=$(jq -r 'select(.type == "user") | .message.content' "$conv_file" 2>/dev/null | head -1)
+      [[ -z "$first_prompt" ]] && first_prompt=$(jq -r 'select(.message.role == "user") | .message.content' "$conv_file" 2>/dev/null | head -1)
+
+      # Count matching lines for relevance hint
+      match_count=$(grep -ci "$SEARCH_TERM" "$conv_file" 2>/dev/null)
+
+      found=$((found + 1))
+      echo "[$found] (found in conversation content - $match_count matches)"
+      echo "    Session:  $session_id"
+      [[ -n "$cwd" ]] && echo "    Project:  $cwd"
+      [[ -n "$timestamp" ]] && echo "    Date:     $timestamp"
+      if [[ -n "$first_prompt" ]]; then
+        truncated="${first_prompt:0:120}"
+        [[ ${#first_prompt} -gt 120 ]] && truncated="${truncated}..."
+        echo "    Prompt:   $truncated"
+      fi
+      echo ""
+    fi
+  done
+done
+
+# 3) Search history.jsonl as final fallback
+if [[ -f "$HISTORY_FILE" ]]; then
+  while IFS=$'\t' read -r session_id project display; do
+    [[ -z "$session_id" ]] && continue
+    [[ -n "${SEEN_SESSIONS[$session_id]}" ]] && continue
+    SEEN_SESSIONS[$session_id]=1
+    found=$((found + 1))
+
+    echo "[$found] (found in history)"
+    echo "    Session:  $session_id"
+    [[ -n "$project" ]] && echo "    Project:  $project"
+    if [[ -n "$display" ]]; then
+      truncated="${display:0:120}"
+      [[ ${#display} -gt 120 ]] && truncated="${truncated}..."
+      echo "    Message:  $truncated"
+    fi
+    echo ""
+  done < <(grep -i "$SEARCH_TERM" "$HISTORY_FILE" | jq -r '[.sessionId, .project, .display] | join("\t")' 2>/dev/null | sort -u -t$'\t' -k1,1)
+fi
+
+if [[ $found -eq 0 ]]; then
+  echo "No conversations found matching: $SEARCH_TERM"
+  exit 0
+fi
+
+echo "Found $found conversation(s)."
+echo ""
+echo "To resume a conversation, run:"
+echo "  clauderesume <session_id>"
