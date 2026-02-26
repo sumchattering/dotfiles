@@ -18,6 +18,11 @@ fi
 # Created by `pipx` on 2024-07-23 14:52:22
 export PATH="$PATH:$HOME/.local/bin"
 
+# Unlock login keychain on SSH login
+if [[ -n "$SSH_CONNECTION" ]] && security show-keychain-info ~/Library/Keychains/login.keychain-db 2>&1 | grep -q "locked"; then
+    security unlock-keychain ~/Library/Keychains/login.keychain-db
+fi
+
 
 
 # >>> claude-config >>>
