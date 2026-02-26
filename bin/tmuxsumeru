@@ -1,0 +1,25 @@
+#!/bin/bash
+
+TARGET_IP="100.87.219.84"
+TARGET_USER="sumeruchatterjee"
+TARGET_HOST="sumerus-macbook-pro"
+SESSION_NAME="sumerus-mac"
+
+CURRENT_TS_IP=$(tailscale ip -4 2>/dev/null)
+
+if [[ "$CURRENT_TS_IP" == "$TARGET_IP" ]]; then
+    # Install tmux if missing
+    if ! command -v tmux &>/dev/null; then
+        echo "Installing tmux..."
+        brew install tmux
+    fi
+    # Local — attach or create tmux session
+    if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+        exec tmux attach -t "$SESSION_NAME"
+    else
+        exec tmux new-session -s "$SESSION_NAME"
+    fi
+else
+    # Remote — SSH in, install tmux if needed, then attach or create session
+    exec ssh -t "$TARGET_USER@$TARGET_IP" "command -v tmux &>/dev/null || brew install tmux; tmux attach -t $SESSION_NAME 2>/dev/null || tmux new-session -s $SESSION_NAME"
+fi
