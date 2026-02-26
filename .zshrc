@@ -59,3 +59,4 @@ export PATH="$HOME/dotfiles/bin:$PATH"
 # Managed by claude-config bootstrap - do not edit manually
 [ -f ~/.claude-shell-config.sh ] && source ~/.claude-shell-config.sh
 # <<< claude-config <<<
+export PATH="$HOME/.gem/ruby/2.6.0/bin:$PATH"
