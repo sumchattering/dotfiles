@@ -1,13 +1,28 @@
 #!/bin/bash
 
-TARGET_IP="100.87.219.84"
+TARGET_NAME="sumerus-macbook-pro"
 TARGET_USER="sumeruchatterjee"
-TARGET_HOST="sumerus-macbook-pro"
+
+# Resolve IP from tailscale network
+TARGET_IP=$(tailscale status --json 2>/dev/null | python3 -c "
+import sys,json
+data=json.load(sys.stdin)
+name='$TARGET_NAME'
+for node in [data['Self']] + list(data['Peer'].values()):
+    if node['DNSName'].startswith(name + '.'):
+        print(node['TailscaleIPs'][0])
+        break
+" 2>/dev/null)
+
+if [[ -z "$TARGET_IP" ]]; then
+    echo "$TARGET_NAME not found on tailnet"
+    exit 1
+fi
 
 # Check if we're already on the target machine
 CURRENT_TS_IP=$(tailscale ip -4 2>/dev/null)
 if [[ "$CURRENT_TS_IP" == "$TARGET_IP" ]]; then
-    echo "You're already on $TARGET_HOST ($TARGET_IP)"
+    echo "You're already on $TARGET_NAME ($TARGET_IP)"
     exit 0
 fi
 
@@ -20,7 +35,7 @@ fi
 
 # Check if we can connect without password
 if ! ssh -o BatchMode=yes -o ConnectTimeout=5 "$TARGET_USER@$TARGET_IP" true 2>/dev/null; then
-    echo "First time setup: copying SSH key to $TARGET_HOST..."
+    echo "First time setup: copying SSH key to $TARGET_NAME..."
     echo "You'll be asked for your password once."
     ssh-copy-id -i ~/.ssh/id_ed25519.pub "$TARGET_USER@$TARGET_IP"
 fi
