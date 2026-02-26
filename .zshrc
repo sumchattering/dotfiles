@@ -47,9 +47,9 @@ export PATH="/Users/sumeru.chatterjee/.antigravity/antigravity/bin:$PATH"
 # Dotfiles bin
 export PATH="$HOME/dotfiles/bin:$PATH"
 
-# Unlock login keychain on SSH login
-if [[ -n "$SSH_CONNECTION" ]] && security show-keychain-info ~/Library/Keychains/login.keychain-db 2>&1 | grep -q "locked"; then
-    security unlock-keychain ~/Library/Keychains/login.keychain-db
+# Unlock login keychain on SSH login (runs unconditionally — if already unlocked, it's a no-op)
+if [[ -n "$SSH_CONNECTION" ]]; then
+    security unlock-keychain ~/Library/Keychains/login.keychain-db 2>/dev/null || true
 fi
 
 
