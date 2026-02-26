@@ -84,12 +84,15 @@ if $VERBOSE; then
     echo ""
 fi
 
-# Display
+# Display & Lid
 echo "--- Display ---"
-if ioreg -r -d 1 -k IODisplayBrightness 2>/dev/null | grep -q '"IODisplayBrightness" = 0'; then
-    echo "Display: OFF"
-elif pmset -g powerstate IODisplayWrangler 2>/dev/null | tail -1 | grep -q "4"; then
-    echo "Display: ON"
+if ioreg -r -k AppleClamshellState 2>/dev/null | grep -q '"AppleClamshellState" = Yes'; then
+    echo "Lid: CLOSED"
 else
+    echo "Lid: OPEN"
+fi
+if system_profiler SPDisplaysDataType 2>/dev/null | grep -q "Display Asleep: Yes"; then
     echo "Display: OFF"
+else
+    echo "Display: ON"
 fi
