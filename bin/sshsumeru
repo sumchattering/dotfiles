@@ -4,15 +4,7 @@ TARGET_NAME="sumerus-macbook-pro"
 TARGET_USER="sumeruchatterjee"
 
 # Resolve IP from tailscale network
-TARGET_IP=$(tailscale status --json 2>/dev/null | python3 -c "
-import sys,json
-data=json.load(sys.stdin)
-name='$TARGET_NAME'
-for node in [data['Self']] + list(data['Peer'].values()):
-    if node['DNSName'].startswith(name + '.'):
-        print(node['TailscaleIPs'][0])
-        break
-" 2>/dev/null)
+TARGET_IP=$(tailscale status 2>/dev/null | awk -v name="$TARGET_NAME" '$2 == name {print $1; exit}')
 
 if [[ -z "$TARGET_IP" ]]; then
     echo "$TARGET_NAME not found on tailnet"
@@ -24,6 +16,13 @@ CURRENT_TS_IP=$(tailscale ip -4 2>/dev/null)
 if [[ "$CURRENT_TS_IP" == "$TARGET_IP" ]]; then
     echo "You're already on $TARGET_NAME ($TARGET_IP)"
     exit 0
+fi
+
+# Check if SSH port is reachable
+if ! nc -z -w 5 "$TARGET_IP" 22 2>/dev/null; then
+    echo "$TARGET_NAME ($TARGET_IP) is not accepting SSH connections."
+    echo "Make sure Remote Login is enabled: System Settings → General → Sharing → Remote Login"
+    exit 1
 fi
 
 # Check if SSH key exists, generate if not
