@@ -18,9 +18,11 @@ fi
 # Created by `pipx` on 2024-07-23 14:52:22
 export PATH="$PATH:$HOME/.local/bin"
 
-# Unlock login keychain on SSH login (runs unconditionally — if already unlocked, it's a no-op)
+# Unlock login keychain on SSH login — only prompt if actually locked
 if [[ -n "$SSH_CONNECTION" ]]; then
-    security unlock-keychain ~/Library/Keychains/login.keychain-db 2>/dev/null || true
+    if ! security show-keychain-info ~/Library/Keychains/login.keychain-db 2>/dev/null; then
+        security unlock-keychain ~/Library/Keychains/login.keychain-db
+    fi
 fi
 
 
