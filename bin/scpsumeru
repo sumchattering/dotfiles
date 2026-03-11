@@ -1,0 +1,52 @@
+#!/bin/bash
+
+TARGET_NAME="sumerus-macbook-pro"
+TARGET_USER="sumeruchatterjee"
+
+# Resolve IP from tailscale network
+TARGET_IP=$(tailscale status 2>/dev/null | awk -v name="$TARGET_NAME" '$2 == name {print $1; exit}')
+
+if [[ -z "$TARGET_IP" ]]; then
+    echo "$TARGET_NAME not found on tailnet"
+    exit 1
+fi
+
+# Check if we're already on the target machine
+CURRENT_TS_IP=$(tailscale ip -4 2>/dev/null)
+if [[ "$CURRENT_TS_IP" == "$TARGET_IP" ]]; then
+    echo "You're already on $TARGET_NAME ($TARGET_IP)"
+    exit 0
+fi
+
+# Check if SSH port is reachable
+if ! nc -z -w 5 "$TARGET_IP" 22 2>/dev/null; then
+    echo "$TARGET_NAME ($TARGET_IP) is not accepting SSH connections."
+    echo "Make sure Remote Login is enabled: System Settings → General → Sharing → Remote Login"
+    exit 1
+fi
+
+# Check if SSH key exists, generate if not
+if [[ ! -f ~/.ssh/id_ed25519 ]]; then
+    echo "No SSH key found. Generating one..."
+    ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""
+    ssh-add --apple-use-keychain ~/.ssh/id_ed25519 2>/dev/null || ssh-add ~/.ssh/id_ed25519
+fi
+
+# Check if we can connect without password
+if ! ssh -o BatchMode=yes -o ConnectTimeout=5 "$TARGET_USER@$TARGET_IP" true 2>/dev/null; then
+    echo "First time setup: copying SSH key to $TARGET_NAME..."
+    echo "You'll be asked for your password once."
+    ssh-copy-id -i ~/.ssh/id_ed25519.pub "$TARGET_USER@$TARGET_IP"
+fi
+
+if [[ $# -lt 1 ]]; then
+    echo "Usage: sshsumerucopy <local_file> [remote_destination]"
+    echo "  local_file:          path to the local file to copy"
+    echo "  remote_destination:  remote path (default: home directory)"
+    exit 1
+fi
+
+LOCAL_FILE="$1"
+REMOTE_DEST="${2:-~}"
+
+scp "$LOCAL_FILE" "$TARGET_USER@$TARGET_IP:$REMOTE_DEST"
