@@ -223,7 +223,7 @@ render() {
         set_cache "board_all_v2" "$board_data"
     }
 
-    # Calculate per-person totals (only issues in sprints count)
+    # Calculate per-person totals (only issues in closed sprints count; skip active-only issues)
     local overall_persons
     overall_persons=$(echo "$board_data" | jq -r '
         (.issues // []) |
@@ -233,11 +233,15 @@ render() {
             ($issue.fields.assignee.displayName // "Unassigned") as $name |
             ($issue.fields.assignee.emailAddress // "unassigned") as $email |
             ($issue.fields.status.statusCategory.key // "") as $status |
-            (($issue.fields.customfield_10007 // []) | length > 0) as $in_sprint |
+            ($issue.fields.customfield_10007 // []) as $sprints |
+            ($sprints | map(select(.state == "closed")) | length > 0) as $in_closed_sprint |
+            ($sprints | length > 0) as $in_any_sprint |
             .[$email] = (.[$email] // {name: $name, committed: 0, done: 0, backlog: 0}) |
-            (if $in_sprint then
+            (if $in_closed_sprint then
                 .[$email].committed += $pts |
                 (if $status == "done" then .[$email].done += $pts else . end)
+            elif $in_any_sprint then
+                .
             else
                 .[$email].backlog += $pts
             end)
