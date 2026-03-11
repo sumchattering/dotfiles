@@ -62,8 +62,17 @@ set_cache() { mkdir -p "$CACHE_DIR"; echo "$2" > "$CACHE_DIR/$1.json"; }
 # ── Fetch helpers ────────────────────────────────────────────────
 fetch_sprints() {
     local d; d=$(get_cached "sprints") && { echo "$d"; return; }
-    d=$(jira_api "/rest/agile/1.0/board/$BOARD_ID/sprint?state=closed,active")
-    set_cache "sprints" "$d"; echo "$d"
+    local all='{"values":[]}' start=0 page
+    while true; do
+        page=$(jira_api "/rest/agile/1.0/board/$BOARD_ID/sprint?state=closed,active&startAt=$start&maxResults=50")
+        all=$(echo "$all" "$page" | jq -s '.[0].values += (.[1].values // []) | .[0]')
+        local returned total
+        returned=$(echo "$page" | jq '.values | length')
+        total=$(echo "$page" | jq '.total // 0')
+        start=$((start + returned))
+        [[ $start -ge $total ]] && break
+    done
+    set_cache "sprints" "$all"; echo "$all"
 }
 
 fetch_sprint_issues() {
@@ -311,7 +320,50 @@ render() {
             printf "${GRAY}%-20s${RST}  %3d%% ${DIM}= (%s)/%d${RST}\n" "$pname" "$avg_pct" "$pcts_str" "$sprint_count"
         fi
     done
-    
+
+    # Current sprint - show committed points only (informational, not in any calculations)
+    local active_sprint
+    active_sprint=$(echo "$sprints_json" | jq -r --argjson board "$BOARD_ID" '
+        .values // [] |
+        map(select(.originBoardId == $board and .state == "active" and (.name | test("SDK Sprint")))) |
+        first // empty
+    ')
+    if [[ -n "$active_sprint" ]]; then
+        local as_id as_name as_start as_end
+        as_id=$(echo "$active_sprint" | jq -r '.id')
+        as_name=$(echo "$active_sprint" | jq -r '.name')
+        as_start=$(echo "$active_sprint" | jq -r '.startDate // ""')
+        as_end=$(echo "$active_sprint" | jq -r '.endDate // ""')
+
+        local as_issues as_metrics
+        as_issues=$(fetch_sprint_issues "$as_id")
+        as_metrics=$(calc_sprint_metrics "$as_issues" "$as_start" "$as_end")
+
+        printf "\n${DIM}───────────────────────────────────────────────────────────────────${RST}\n"
+        local as_date_range=""
+        [[ -n "$as_start" && "$as_start" != "null" ]] && as_date_range=$(printf " ${DIM}(%s)${RST}" "$(fmt_date_range "$as_start" "$as_end")")
+        printf "${BOLD}${CYAN}Current: %s${RST}" "$as_name"
+        printf "%b\n\n" "$as_date_range"
+
+        echo "$as_metrics" | jq -r '
+            to_entries | sort_by(.value.committed) | reverse |
+            map(select(.value.committed > 0)) | .[].value |
+            "\(.name)|\(.committed)|\(.done)"
+        ' | while IFS='|' read -r pname committed done; do
+            local is_me=""
+            [[ "$pname" == "Sumeru Chatterjee" ]] && is_me="true"
+
+            printf "  "
+            if [[ -n "$is_me" ]]; then
+                printf "${WHITE}${BOLD}%-20s${RST}  ${WHITE}%g pts committed${RST}" "$pname" "$committed"
+                printf "  ${DIM}(%g Done)${RST}\n" "$done"
+            else
+                printf "${GRAY}%-20s${RST}  ${GRAY}%g pts committed${RST}" "$pname" "$committed"
+                printf "  ${DIM}(%g Done)${RST}\n" "$done"
+            fi
+        done
+    fi
+
     echo ""
 }
 
